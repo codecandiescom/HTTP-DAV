@@ -1,4 +1,4 @@
-# $Id: DAV.pm,v 0.22 2001/09/03 19:39:28 pcollins Exp $
+# $Id: DAV.pm,v 0.23 2001/09/07 17:22:11 pcollins Exp $
 package HTTP::DAV;
 
 use LWP;
@@ -9,11 +9,14 @@ use HTTP::DAV::ResourceList;
 use HTTP::DAV::Resource;
 use HTTP::DAV::Comms;
 use URI::file;
+use URI::Escape;
+use File::Glob;
+
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = sprintf("%d.%02d", q$Revision: 0.22 $ =~ /(\d+)\.(\d+)/);
-$VERSION_DATE= sprintf("%s", q$Date: 2001/09/03 19:39:28 $ =~ m# (.*) $# );
+$VERSION     = sprintf("%d.%02d", q$Revision: 0.23 $ =~ /(\d+)\.(\d+)/);
+$VERSION_DATE= sprintf("%s", q$Date: 2001/09/07 17:22:11 $ =~ m# (.*) $# );
 
 $DEBUG=0;
 
@@ -247,89 +250,128 @@ sub _get {
 
    # Setup the resource based on the passed url and do a propfind.
    my $url =  $self->get_absolute_uri($uri);
-   my $resource = $self->new_resource( -uri => $url);
-   my $resp = $resource->propfind(-depth=>1);
 
-   if ($resp->is_error) {
-      return $self->err( 'ERR_RESP_FAIL',$resp->message() );
-   } 
+   # split the leaf from the URL:
+   # http://host.com/test/xxx -> ( http://host.com/test, xxx )
+   my ($noleaf,$leafname) = HTTP::DAV::Utils::split_leaf($url);
 
-   # Set the working directory
-   my $passed_to = $to || "";
-   my $leafname = &_get_leafname($url);
-   my $local_pwd;
-   if (-d $to) {
-      if (!$to || $to eq ".") {
-         $to = getcwd();
+   # If there is a glob in the remote leafname then we need to:
+   # Find all of the children with a propfind or url.
+   # Then, if the children match the leafname glob, download it.
+   $leafname = URI::Escape::uri_unescape($leafname);
+   if ($leafname =~ /[\*\?\[]/ ) {
+      print "Globbing in $noleaf for $leafname\n" if $HTTP::DAV::DEBUG>1;
+
+      my $resource = $self->new_resource( -uri => $noleaf);
+
+      my $resp = $resource->propfind(-depth=>1);
+      return $self->err('ERR_RESP_FAIL',$resp->message()) if ($resp->is_error);
+
+      $leafname = HTTP::DAV::Utils::glob2regex($leafname);
+
+      my $rl = $resource->get_resourcelist();
+      if ($rl) {
+         my $match = 0;
+
+         # We eval this because a bogus leafname could bomb the regex.
+         eval {
+            foreach my $progeny ( $rl->get_resources() ) {
+               my $progeny_url = $progeny->get_uri;
+               my $progeny_leaf= HTTP::DAV::Utils::get_leafname($progeny_url);
+               if ( $progeny_leaf =~ /^$leafname$/ ) {
+                  print "Matched $progeny_url\n" if $HTTP::DAV::DEBUG>1;
+                  $match = $self->_get(-url => $progeny_url, -to => $to);
+               } else {
+                  print "Skipped $progeny_url\n" if $HTTP::DAV::DEBUG>1;
+               }
+            }
+         };
+         $self->err('ERR_GENERIC',"No match found") unless ($match);
       }
-
-      $local_pwd = "$to/$leafname";
-   } else {
-      $local_pwd = "$to";
    }
-   $local_pwd =~ s#//#/#g; # Fold double //'s to /'s.
 
-   print "Am going to try and get $url to $local_pwd\n" if $DEBUG>2;
+   # This is not a glob it is a normal resource.
+   else {
+      my $resource = $self->new_resource( -uri => $url);
+      my $resp = $resource->propfind(-depth=>1);
+      return $self->err('ERR_RESP_FAIL',$resp->message()) if ($resp->is_error);
 
-   # GET A DIRECTORY
-   if ( $resource->is_collection() ) {
-      if ($passed_to eq "" ) {
-         return $self->err('ERR_GENERIC',
-           "Won't get a collection unless you tell me where to put it.") 
-      } 
-
-      # Try and make the directory locally
-      if (! mkdir $local_pwd ) {
-         return $self->err('ERR_GENERIC',
-           "mkdir local:$local_pwd failed: $!") 
+      # Set the working directory
+      my $passed_to = $to || "";
+      my $local_pwd;
+      if (-d $to) {
+         if (!$to || $to eq ".") {
+            $to = getcwd();
+         }
+   
+         $local_pwd = "$to/$leafname";
+      } else {
+         $local_pwd = $to;
       }
-
-      $self->ok("mkdir $local_pwd");
+      $local_pwd =~ s#//#/#g; # Fold double //'s to /'s.
    
-      # This is the degenerate case for an empty dir.
-      print "Made directory $local_pwd\n" if $DEBUG>2;
-
-      my $resource_list = $resource->get_resourcelist();
-      if ($resource_list) {
-         # FOREACH FILE IN COLLECTION, GET IT.
-         foreach my $progeny_r ( $resource_list->get_resources() ) {
+      print "Am going to try and get $url to $local_pwd\n" if $DEBUG>2;
    
-            my $progeny_url = $progeny_r->get_uri();
-            print "Found progeny:$progeny_url\n" if $DEBUG>2;
-            my $progeny_local_filename = _get_leafname($progeny_url);
+      # GET A DIRECTORY
+      if ( $resource->is_collection() ) {
+         if ($passed_to eq "" ) {
+            return $self->err('ERR_GENERIC',
+              "Won't get a collection unless you tell me where to put it.") 
+         } 
    
-            $progeny_local_filename = 
-               URI::file->new($progeny_local_filename)->abs("$local_pwd/");
+         # Try and make the directory locally
+         if (! mkdir $local_pwd ) {
+            return $self->err('ERR_GENERIC',
+              "mkdir local:$local_pwd failed: $!") 
+         }
    
-            if ( $progeny_r->is_collection() ) {
-               $self->_get(-url => $progeny_url, -to => $local_pwd);
-            } else {
-               $self->_do_get_tofile($progeny_r,$progeny_local_filename);
+         $self->ok("mkdir $local_pwd");
+      
+         # This is the degenerate case for an empty dir.
+         print "Made directory $local_pwd\n" if $DEBUG>2;
+   
+         my $resource_list = $resource->get_resourcelist();
+         if ($resource_list) {
+            # FOREACH FILE IN COLLECTION, GET IT.
+            foreach my $progeny_r ( $resource_list->get_resources() ) {
+      
+               my $progeny_url = $progeny_r->get_uri();
+               print "Found progeny:$progeny_url\n" if $DEBUG>2;
+               my $progeny_local_filename = HTTP::DAV::Utils::get_leafname($progeny_url);
+      
+               $progeny_local_filename = 
+                  URI::file->new($progeny_local_filename)->abs("$local_pwd/");
+      
+               if ( $progeny_r->is_collection() ) {
+                  $self->_get(-url => $progeny_url, -to => $local_pwd);
+               } else {
+                  $self->_do_get_tofile($progeny_r,$progeny_local_filename);
+               }
             }
          }
       }
-   }
-
-   # GET A FILE
-   else 
-   {
-      # If they didn't specify a local name at all then retrieve the 
-      # file and return it as a scalar.
-      if ( $passed_to eq "" ) {
-         my $response = $resource->get();
-         if ($response->is_error) {
-            $self->err('ERR_GENERIC',
-               "get $url failed: ". $response->message);
-            return undef;
+   
+      # GET A FILE
+      else 
+      {
+         # If they didn't specify a local name at all then retrieve the 
+         # file and return it as a scalar.
+         if ( $passed_to eq "" ) {
+            my $response = $resource->get();
+            if ($response->is_error) {
+               $self->err('ERR_GENERIC',
+                  "get $url failed: ". $response->message);
+               return undef;
+            } else {
+               $self->ok("get $url");
+               return $response->content();
+            }
+   
+         # If they did specify a local directory then save it 
+         # to there using our utility function.
          } else {
-            $self->ok("get $url");
-            return $response->content();
+            $self->_do_get_tofile($resource,$local_pwd);
          }
-
-      # If they did specify a local directory then save it 
-      # to there using our utility function.
-      } else {
-         $self->_do_get_tofile($resource,$local_pwd);
       }
    }
    return 1;
@@ -358,18 +400,6 @@ sub _do_get_tofile {
    print FILE $resource->get_content;
    close FILE;
    return $self->ok("get $file (" . $response->content_length() . " bytes)" );
-}
-
-# This subroutine takes a URI and gets the last portion 
-# of it: the filename.
-# e.g. /dir1/dir2/file.txt => file.txt
-#      /dir1/dir2/         => dir2
-sub _get_leafname {
-   my($url) = shift;
-   my $leaf_resource = $url;
-   $leaf_resource =~ s#[\/\\]$##;
-   my @leaf_resource = split(/[\/\\]+/,$leaf_resource);
-   return pop @leaf_resource || 0;
 }
 
 # LOCK
@@ -531,7 +561,7 @@ sub _move_copy {
 
    my $resp = $dest_resource->propfind(-depth=>1);
    if ($resp->is_success && $dest_resource->is_collection) {
-      my $leafname = &_get_leafname($url);
+      my $leafname = HTTP::DAV::Utils::get_leafname($url);
       $dest_url = "$dest_url/$leafname";
       $dest_resource = $self->new_resource( -uri => $dest_url );
    }
@@ -705,12 +735,22 @@ sub proppatch {
    }
 }
 
+
+######################################################################
 sub put {
    my($self,@p) = @_;
    my ($local,$url,$callback) = 
       HTTP::DAV::Utils::rearrange(['LOCAL','URL','CALLBACK'], @p);
    $self->_start_multi_op("put $local",$callback);
-   $self->_put(@p);
+   if ( ref($local) eq "SCALAR" ) {
+      $self->_put(@p);
+   } else {
+      my @globs=glob("$local");
+      foreach my $file (@globs) {
+         print "Starting put of $file\n" if $HTTP::DAV::DEBUG>1;
+         $self->_put(-local=>$file,-url=>$url,-callback=>$callback);
+      }
+   }
    $self->_end_multi_op();
    return $self->is_success;
 }
@@ -736,9 +776,9 @@ sub _put {
       # Add one / to the end of the collection
       $url =~ s/\/*$//g; #Strip em
       $url .= "/";       #Add one
-      $leaf_name = _get_leafname($local);
+      $leaf_name = HTTP::DAV::Utils::get_leafname($local);
    } else {
-      $leaf_name = _get_leafname($url);
+      $leaf_name = HTTP::DAV::Utils::get_leafname($url);
    }
 
    my $target = $self->get_absolute_uri($leaf_name,$url);
@@ -1052,11 +1092,11 @@ downloads the file or directory at C<URL> to the local location indicated by C<T
 
 =item C<-url> 
 
-is the remote resource you'd like to get. It can be a file or directory.
+is the remote resource you'd like to get. It can be a file or directory or a "glob".
 
 =item C<-dest> 
 
-is where you'd like to put the remote resource. If not specified, -dest defaults to "." and should always do what you expect.
+is where you'd like to put the remote resource. If -dest is not specified then the get() function will routine the file contents as a scalar.
 
 =item C<-callback>
 
@@ -1080,7 +1120,9 @@ The C<mesg> argument is a status message. The status message could contain any s
 
 =back
 
-The return value of get is always 1 or 0 indicating whether the entire get sequence was a success or if there was ANY failures. For instance, in a recursive get, if the server couldn't open 1 of the 10 remote files, for whatever reason, then the return value will be 0. This is so that you can have your script call the C<errors()> routine to handle error conditions.
+The return value of get is normally 1 or 0 indicating whether the entire get sequence was a success or if there was ANY failures. For instance, in a recursive get, if the server couldn't open 1 of the 10 remote files, for whatever reason, then the return value will be 0. This is so that you can have your script call the C<errors()> routine to handle error conditions.
+
+If you did not specify a -to location then get will return the file's contents as a scalar. In this case, you should expect "undef", or "file contents".
 
 Requires a working resource to be set before being called. See C<open>.
 
@@ -1090,7 +1132,7 @@ B<get examples:>
 
 Recursively get remote my_dir/ to .
 
-  $d->get("my_dir/");
+  $d->get("my_dir/",".");
 
 Recursively get remote my_dir/ to /tmp/my_dir/ calling &mycallback($success,$mesg) everytime a file operation is completed.
 
@@ -1103,6 +1145,22 @@ Get remote my_dir/index.html to /tmp/index.html
 Get remote index.html to /tmp/index1.html
 
   $d->get("index.html","/tmp/index1.html");
+
+Get remote index.html as a scalar (into the string $file_contents):
+
+  $file_contents = $d->get("index.html");
+
+Get all of the files matching the globs file1* and file2*:
+
+  $d->get("file[12]*","/tmp");
+
+Get all of the files matching the glob file?.html:
+
+  $d->get("file?.html","/tmp"); # downloads file1.html and file2.html but not file3.html or file1.txt
+
+Invalid glob:
+
+  $d->get("/dav_dir/*/index.html","/tmp"); # Can not glob like this.
 
 =item B<lock([URL],[OWNER],[DEPTH],[TIMEOUT],[SCOPE],[TYPE])>
 
@@ -1284,9 +1342,39 @@ See C<set_prop> and C<unset_prop> for examples.
 
 =item B<put(LOCAL,[URL],[CALLBACK])>
 
-Requires a working resource to be set before being called. See C<open>.
+uploads the files or directories at -local to the remote destination at -url.
+
+-local points to a file, directory or series of files or directories (indicated by a glob).
+
+If the filename contains any of the characters `*',  `?' or  `['  it is a candidate for filename substitution, also  known  as  ``globbing''.   This word  is  then regarded as a pattern (``glob-pattern''), and replaced with an alphabetically sorted list  of  file  names which match the pattern.  
+
+One can upload/put a string by passing a reference to a scalar in the -local parameter. See example below.
+
+put requires a working resource to be set before being called. See C<open>.
 
 The return value is always 1 or 0 indicating success or failure.
+
+See L<get()> for a description of what the optional callback parameter does.
+
+B<put examples:>
+
+Put a string to the server:
+
+  my $myfile = "This is the contents of a file to be uploaded\n";
+  $d->put(-local=>\$myfile,-url=>"http://www.host.org/dav_dir/file.txt");
+
+Put a local file to the server:
+
+  $d->put(-local=>"/tmp/index.html,-url=>"http://www.host.org/dav_dir/");
+
+Put a series of local files to the server:
+
+  In these examples, /tmp contains file1.html, file1, file2.html, 
+  file2.txt, file3.html, file2/
+
+  $d->put(-local=>"/tmp/file[12]*",-url=>"http://www.host.org/dav_dir/");
+  
+  uploads file1.html, file1, file2.html, file2.txt and the directory file2/ to dav_dir/.
 
 =item B<set_prop([URL],[NAMESPACE],PROPNAME,PROPVALUE)>
 

@@ -14,11 +14,29 @@ PerlDAV -- A WebDAV client library for Perl5
     Learn more about WebDAV at http://www.webdav.org/
 
 LATEST VERSION AND WHAT'S NEW
-    The latest version is: v0.22 (released 2001/09/03 19:39:28)
+    The latest version is: v0.23 (released 2001/09/07 17:22:11)
 
     Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
-  What's New:
+  What's New for v0.23:
+
+    *   file globbing for get and put
+
+        HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This
+        functionality also propagates to dave. This allows you to do the
+        following:
+
+         dav> put /tmp/index*.html
+         dav> get index[12].htm? /tmp
+
+         ?,* and sets ([]) are supported. See the docs for details.
+
+        HTTP::DAV now requires the Perl module File::Glob which comes
+        bundled with perl5.6 and later.
+
+    *   bug fix in -overwrite flag in HTTP::DAV::copy/move.
+
+  What's New for v0.22:
 
     *   dave -- the new command line client
 

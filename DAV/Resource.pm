@@ -1,4 +1,4 @@
-# $Id: Resource.pm,v 0.23 2001/09/02 08:46:37 pcollins Exp $
+# $Id: Resource.pm,v 0.24 2001/09/07 17:23:38 pcollins Exp $
 package HTTP::DAV::Resource;
 
 use HTTP::DAV;
@@ -8,7 +8,7 @@ use HTTP::Date qw(str2time);
 use HTTP::DAV::ResourceList;
 use URI::Escape;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.23 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.24 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION); 
@@ -623,7 +623,7 @@ sub _move_copy {
    }
     
    # Sanity check. If overwrite ain't F or 0, then make it T
-   $overwrite = "F" if (defined $overwrite && $overwrite == 0);
+   $overwrite = "F" if (defined $overwrite && $overwrite eq "0");
    $overwrite = (defined $overwrite && $overwrite eq "F")?"F":"T";
 
    # Destination Resource must have a URL

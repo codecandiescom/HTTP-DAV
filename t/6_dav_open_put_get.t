@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+
 use strict;
 use HTTP::DAV;
 use Test;

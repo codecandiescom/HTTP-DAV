@@ -31,11 +31,34 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.22 (released 2001/09/03 19:39:28)
+The latest version is: v0.23 (released 2001/09/07 17:22:11)
 
 Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
-=head2 What's New:
+=head2 What's New for v0.23:
+
+=over 4
+
+=item *
+
+B<file globbing for get and put>
+
+HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This functionality also propagates to dave. This allows you to do the following:
+
+ dav> put /tmp/index*.html
+ dav> get index[12].htm? /tmp
+
+ ?,* and sets ([]) are supported. See the docs for details.
+
+HTTP::DAV now requires the Perl module File::Glob which comes bundled with perl5.6 and later.
+
+=item *
+
+bug fix in -overwrite flag in HTTP::DAV::copy/move.
+
+=back
+
+=head2 What's New for v0.22:
 
 =over 4
 

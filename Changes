@@ -1,5 +1,23 @@
 Revision history for PerlDAV
 
+  v0.23 (released 2001/09/07):
+
+    *   file globbing for get and put
+
+        HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This
+        functionality also propagates to dave. This allows you to do the
+        following:
+
+         dav> put /tmp/index*.html
+         dav> get index[12].htm? /tmp
+
+         ?,* and sets ([]) are supported. See the docs for details.
+
+        HTTP::DAV now requires the Perl module File::Glob which comes
+        bundled with perl5.6 and later.
+
+    *   bug fix in -overwrite flag in HTTP::DAV::copy/move.
+
   v0.22 (released 2001/09/03)
 
     Complete overhaul of API, recursive get and put, addition of dave.

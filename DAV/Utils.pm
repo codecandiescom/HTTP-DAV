@@ -1,7 +1,7 @@
-# $Id: Utils.pm,v 0.9 2001/08/27 17:12:43 pcollins Exp $
+# $Id: Utils.pm,v 0.10 2001/09/07 17:23:38 pcollins Exp $
 package HTTP::DAV::Utils;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.9 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.10 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
@@ -231,6 +231,64 @@ sub compare_uris {
    $uri1=~s#\/$##g;
    $uri2=~s#\/$##g;
    $uri1 eq $uri2;
+}
+
+# This subroutine takes a URI and gets the last portion 
+# of it: the filename.
+# e.g. /dir1/dir2/file.txt => file.txt
+#      /dir1/dir2/         => dir2
+#      /                   => undef
+sub get_leafname {
+   my($url) = shift;
+   my $leaf;
+   ($url,$leaf) = &split_leaf($url);
+   return $leaf;
+}
+
+# This subroutine takes a URI and splits the leaf from the path.
+# It returns both.
+# of it: the filename.
+# e.g. /dir1/dir2/file.txt => file.txt
+#      /dir1/dir2/         => dir2
+#      /                   => undef
+sub split_leaf {
+   my($url) = shift;
+   $url =~ s#[\/\\]$##; #Remove trailing slashes.
+   $url = HTTP::DAV::Utils::make_uri($url);
+
+   # Remove the leaf from the path.
+   my $path = $url->path_query();
+   my @path = split(/[\/\\]+/,$path);
+   my $leaf = pop @path || "";
+   $path = join('/',@path);
+
+   #Now put the path back into the URL.
+   $url->path_query($path);
+
+   return ($url,$leaf);
+}
+
+# Turns a file-oriented glob
+# into a regular expression.
+# BTW, I recommend you eval any regex command you use on 
+# this outputted  regex value.
+# If somebody types uses an incorrect glob and you try to /$regex/ it 
+# then perl will bomb with a fatal regex error.
+# For instance, /file[ab.txt/ would bomb.
+sub glob2regex {
+   my($f) = @_;
+   # Turn the leafname glob into a regex.
+   # Substitute \ for \\
+   # Substitute . for \.
+   # Substitute * for .*
+   # Substitute ? for .
+   # No need to substitute [...]
+   $f =~ s/\\/\\\\/g;
+   $f =~ s/\./\\./g;
+   $f =~ s/\*/.*/g;
+   $f =~ s/\?/./g;
+   print "Glob regex becomes $f\n" if $HTTP::DAV::DEBUG>1;
+   return $f;
 }
 
 1;
