@@ -14,59 +14,40 @@ PerlDAV -- A WebDAV client library for Perl5
     Learn more about WebDAV at http://www.webdav.org/
 
 LATEST VERSION AND WHAT'S NEW
-    The latest version is: v0.23 (released 2001/09/07 17:22:11)
+    The latest version is: v0.29 (released 2001/10/30 15:47:10)
 
     Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
-  What's New for v0.23:
+  What's new
 
-    *   file globbing for get and put
+    *   https
 
-        HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This
-        functionality also propagates to dave. This allows you to do the
-        following:
+        https support as provided from the underlying LWP library has been
+        tested against mod_dav and mod_ssl. Seems to work well. See
+        INSTALLATION for more detail.
 
-         dav> put /tmp/index*.html
-         dav> get index[12].htm? /tmp
+    *   Digest authentication
 
-         ?,* and sets ([]) are supported. See the docs for details.
+        Requires MD5 to be installed. See INSTALLATION notes.
 
-        HTTP::DAV now requires the Perl module File::Glob which comes
-        bundled with perl5.6 and later.
+    *   various bug fixes
 
-    *   bug fix in -overwrite flag in HTTP::DAV::copy/move.
+    *   more powerful callback support for get()
 
-  What's New for v0.22:
+        Useful for giving progress indicators.
 
-    *   dave -- the new command line client
+    *   get() to filehandles and scalar references
 
-        I wrote dave (the DAV Explorer) because I needed an end-user
-        application that allowed me to "feel" how well the HTTP::DAV API was
-        performing. dave is quite similar to Joe Orton's C-based DAV client
-        called cadaver (yes, imitation is the best form of flattery).
+        the get() routine now allows you to pass by reference a filehandle
+        or scalar in which to save the contents of the GET request.
 
-    *   A new and simpler API
+    *   added namespace abbreviations in proppatch
 
-        This new API is accessed directly through the HTTP::DAV module and
-        is based on the core API written in previous releases.
+        Thanks to Jeremy for this patch.
 
-    *   new methods
+    *   improved redirect handling in Comms.pm
 
-        The new API now supports, proppatch, recursive get, recursive put
-        and steal locks.
-
-    *   A substantial core API overhaul
-
-        Moving from v0.05 to v0.22 in one release might indicate the amount
-        of work gone into this release.
-
-    *   A new interoperability test suite
-
-        is now included in PerlDAV. The test suite is built on top of the
-        standard Perl Test::Harness modules. Still in development, the test
-        suite is highlighting interoperability problems with DAV-servers a
-        lot quicker than before. See the the test suite & interoperability
-        entry elsewhere in this document section.
+        Thanks to Jeremy for this patch.
 
     See the Changes file for previous releases.
 
@@ -93,7 +74,7 @@ INSTALLING PERLDAV
     When you install PerlDAV, the HTTP::DAV library will be installed to
     your Perl library location (usually /usr/local/lib/perl5)
 
-    `dave' will be installed to /usr/local/bin. This suits most people but
+    "dave" will be installed to /usr/local/bin. This suits most people but
     you can modify this by using the INSTALLBIN flag:
 
        $ perl Makefile.PL INSTALLBIN="/home/pcollins/bin"
@@ -102,19 +83,33 @@ INSTALLING PERLDAV
 
     *   LWP (Have not tested lower than v5.48)
 
-    *   XML::DOM (Have not tested lower than v1.26)
+    *   XML::DOM (Have not tested lower than v1.26). Requires James Clark's
+        expat library:
 
     *   Perl5 (Have not tested lower than v5.005)
+
+  Optional Prerequisites.
+
+    *   Crypt::SSLeay if you'd like to use https. Crypt::SSLeay requires the
+        openssl library as well. See Crypt::SSLeay's excellent install
+        instructions for how to get https support into LWP (and hence
+        HTTP::DAV). I've tested HTTP::DAV and Crypt::SSLeay against
+        Apache/mod_dav with the mod_ssl plugin. Works seamlessly.
+
+    *   MD5 if you'd like to use LWP's Digest authentication.
 
     To get the latest versions of these prerequisite modules you can simply
     type this at the command prompt:
 
+       $ <install expat>
+    then:
        $ perl -MCPAN -e shell
        cpan> install LWP
        cpan> install XML::DOM
 
     or if you just 'install HTTP::DAV' the lovely CPAN module should just
-    magically install all of the prerequisites for you.
+    magically install all of the prerequisites for you (you'll still need to
+    manually instal expat though).
 
   What Systems Does It Work With?
 
@@ -126,7 +121,7 @@ WHERE ARE THE MANUALS?
     Once you've installed PerlDAV, you can type:
 
        $ perldoc HTTP::DAV
-       $ perldoc dave
+       $ man dave
 
 GETTING HELP
   The perldav mailing list
@@ -135,14 +130,14 @@ GETTING HELP
     Please see http://mailman.webdav.org/mailman/listinfo/perldav
 
 THE TEST SUITE & INTEROPERABILITY
-    You will notice that the standard `make test' command invokes a large
+    You will notice that the standard "make test" command invokes a large
     set of test procedures, but most will be skipped. This standard test is
     sufficient to give you a good indication that PerlDAV has installed
     properly.
 
     If you'd like to see how well PerlDAV performs against a particular DAV
     server then you should set the URL (and username,password) in the test
-    suite t/TestDetails.pm. Then you can run `make test' again and watch the
+    suite t/TestDetails.pm. Then you can run "make test" again and watch the
     test suite perform as many operations as the server supports. Please
     note that the test suite will perofrm well over 200 HTTP requests to
     your server.
@@ -194,7 +189,7 @@ AUTHOR AND COPYRIGHT
     Public License or the Artistic License, as specified in the Perl README
     file.
 
-    $Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+    $Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
 
     ** This file was automatically generated from **
     ** doc/Changes.pod. To edit it, see there.    **

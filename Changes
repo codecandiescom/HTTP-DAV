@@ -1,5 +1,36 @@
 Revision history for PerlDAV
 
+  v0.29 (released 2001/10/31):
+
+    *   https
+
+        https support as provided from the underlying LWP library has been
+        tested against mod_dav and mod_ssl. Seems to work well. See
+        INSTALLATION for more detail.
+
+    *   Digest authentication
+
+        Requires MD5 to be installed. See INSTALLATION notes.
+
+    *   various bug fixes
+
+    *   more powerful callback support for get()
+
+        Useful for giving progress indicators.
+
+    *   get() to filehandles and scalar references
+
+        the get() routine now allows you to pass by reference a filehandle
+        or scalar in which to save the contents of the GET request.
+
+    *   added namespace abbreviations in proppatch
+
+        Thanks to Jeremy for this patch.
+
+    *   improved redirect handling in Comms.pm
+
+        Thanks to Jeremy for this patch.
+
   v0.23 (released 2001/09/07):
 
     *   file globbing for get and put

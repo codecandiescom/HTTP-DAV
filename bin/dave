@@ -1,5 +1,5 @@
 #!/usr/local/bin/perl -w
-# $Id: dave,v 1.20 2001/09/02 08:47:01 pcollins Exp $
+# $Id: dave,v 1.23 2001/10/30 15:48:21 pcollins Exp $
 
 use strict;
 use vars '$AUTOLOAD';
@@ -14,7 +14,7 @@ use Text::ParseWords;
 use Time::Local;
 use URI::file;
 
-my $VERSION    = sprintf("%d.%02d", q$Revision: 1.20 $ =~ /(\d+)\.(\d+)/);
+my $VERSION    = sprintf("%d.%02d", q$Revision: 1.23 $ =~ /(\d+)\.(\d+)/);
 my $TMP_DIR    = "/tmp";
 my $LOCK_OWNER = "dave/v$VERSION (pid $$)";
 my $USER_AGENT = "dave/v$VERSION (perldav)";
@@ -163,7 +163,12 @@ sub pm { print $OUT "** $_[0] **\n"; }
 
 sub command_cd     { $gdc->cwd    (@_); pm($gdc->message()) }
 sub command_copy   { $gdc->copy   (@_); pm($gdc->message()) }
-sub command_delete { $gdc->delete (@_); pm($gdc->message()) }
+
+sub command_delete { 
+   $gdc->delete(-url=> $_[0], -callback=>\&cb);
+   pm($gdc->message());
+}
+
 sub command_mkcol  { $gdc->mkcol  (@_); pm($gdc->message()) }
 sub command_move   { $gdc->move   (@_); pm($gdc->message()) }
 sub command_open   { $gdc->open   (@_); pm($gdc->message()) }
@@ -201,12 +206,8 @@ sub command_showlocks {
 }
 
 sub command_cat { 
-   my $file = $gdc->get(@_);
-   if ($file) {
-      print $OUT $file . "\n";
-   } else {
-      pm( scalar $gdc->message()) 
-   }
+   my ($url) = @_;
+   $gdc->get(-url=>$url, -callback=>\&cat_callback,-chunk=>128);
 }
 
 sub command_edit { 
@@ -272,19 +273,14 @@ sub command_edit {
    }
 }
 
-sub callback_for_get_and_put {
-   my ($success,$message) = @_;
-   print $OUT ($success) ? "  " : "**";
-   print $OUT "$message ";
-   print $OUT "\n";
-}
+
 
 sub command_get { 
    my ($remote,$local) = @_;
    $local ||= ".";
    $gdc->get(-url=>$remote,
              -to =>$local,
-             -callback=>\&callback_for_get_and_put
+             -callback=>\&cb
             );
 }
 
@@ -293,7 +289,7 @@ sub command_put {
    $remote ||= ".";
    $gdc->put(-local=>$local,
              -url  =>$remote,
-             -callback=>\&callback_for_get_and_put
+             -callback=>\&cb
             );
 }
 
@@ -415,6 +411,57 @@ sub AUTOLOAD {
    my $sub = $AUTOLOAD || "";
    #my @args = @{$_[0]} || ();
    die "Fatal Error. No function defined $sub ?!\n";
+}
+
+######################################################################
+# CALLBACKS for cat,get and put
+{
+   my $in_transfer=0;
+   
+   sub cat_callback {
+      my($status,$mesg,$url,$so_far,$length,$data) = @_;
+      $|=1;
+      if ($status == 1) {
+         print "\n" if ($in_transfer);
+         print "**$mesg (success)\n";
+         $in_transfer=0;
+      }
+      if ($status == 0) {
+         print "**$mesg\n";
+         $in_transfer=0;
+      }
+      if ($status == -1) {
+         print $OUT $data;
+         $in_transfer++;
+      }
+   }
+
+   # Used for get and put. put doesn't support chunking though.
+   sub cb {
+      my($status,$mesg,$url,$so_far,$length,$data) = @_;
+      $|=1;
+      if ($status == 1) {
+         print "\n" if ($in_transfer);
+         print "  $mesg (success)\n";
+         $in_transfer=0;
+      }
+      if ($status == 0) {
+         print "**$mesg\n";
+         $in_transfer=0;
+      }
+      if ($status == -1) {
+         if (!$in_transfer++) {
+            print "  Transferring $url ($length bytes):\n";
+         }
+         my $width = 60;
+         if ($length>0) {
+            my $num = int($so_far/$length * $width);
+            my $space = $width-$num;
+            print "  [" . "#"x$num . " "x$space . "]";
+         }
+         print " $so_far bytes\r";
+      }
+   }
 }
 
 ###########################################################################
@@ -632,6 +679,10 @@ dave is a powerful command-line program for interacting with WebDAV-enabled webs
 
 =item * lock and unlock remote files and directories
 
+=item * securely transfer over https
+
+=item * authenticate using the safer Digest authentication
+
 =back
 
 Dave is a part of the PerlDAV project (http://www.webdav.org/perldav/) and is built on top of the HTTP::DAV perl API.
@@ -728,8 +779,11 @@ deletes a remote resource
    dave> delete index.html
    dave> rmdir ./dir1
    dave> delete /dav_dir/dir2/
+   dave> delete /dav_dir/*.html
 
 This command recursively deletes directories. BE CAREFUL :)
+
+This command supported wildcards (globbing). See get.
 
 Aliases: rm, rmdir
 
@@ -789,6 +843,12 @@ Get remote my_dir/index.html to /tmp/index.html
 Get remote index.html to /tmp/index1.html
 
   dave> get index.html /tmp/index1.html
+
+Use globs and save to /tmp
+
+  dave> get index* /tmp                   # Gets index*.html, index*.txt, etc.
+  dave> get index*.html /tmp/index1.html  # Gets index*.html
+  dave> get index[12].htm?                # Gets file1 and file2, .htm and .html
 
 =item B<? [CMD]>
 
@@ -970,6 +1030,20 @@ Recursively put local my_dir/ to host.org/dav_dir/my_dir/:
 Put local index.html to host.org/dav_dir/index1.html:
 
   dave> put /tmp/index.html index1.html
+
+Put * to remote directory
+
+  dave> put *
+
+Put index[12].htm? to remote directory /dav_dir (/dav_dir must exist)
+
+  dave> put index[12].htm? /dav_dir
+
+Put index[1234].htm? to remote directory /dav_dir (/dav_dir must exist)
+
+  dave> put index[1-4].htm? /dav_dir
+
+Glob types supported are, * (matches any characters), ? (matches any one character), [...] (matches any characters in the set ...). 
 
 =item B<pwd>
 

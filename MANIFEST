@@ -23,6 +23,8 @@ t/4_multistatus.t
 t/5_propfind.t
 t/5_proppatch.t
 t/6_dav_copy_move.t
+t/6_dav_get_callback.t
+t/6_dav_globs.t
 t/6_dav_lock.t
 t/6_dav_lock2.t
 t/6_dav_open_put_get.t
@@ -34,7 +36,5 @@ t/test_data/file2
 t/test_data/file2.txt
 t/test_data/file3
 t/test_data/file3.txt
-t/test_data/file4.txt
+t/test_data/file4.txt.gz
 t/test_data/subdir/test3.txt
-t/test_data/test1.txt
-t/test_data/test2.txt.gz

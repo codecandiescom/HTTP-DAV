@@ -12,6 +12,52 @@ Revision history for PerlDAV
 
 =end text
 
+=head2 v0.29 (released 2001/10/31):
+
+=over 4
+
+=item *
+
+B<https>
+
+https support as provided from the underlying LWP library has been tested against mod_dav and mod_ssl. Seems to work well. See INSTALLATION for more detail.
+
+=item *
+
+B<Digest authentication>
+
+Requires MD5 to be installed. See INSTALLATION notes.
+
+=item *
+
+B<various bug fixes>
+
+=item *
+
+B<more powerful callback support for get()>
+
+Useful for giving progress indicators.
+
+=item *
+
+B<get() to filehandles and scalar references>
+
+the get() routine now allows you to pass by reference a filehandle or scalar in which to save the contents of the GET request.
+
+=item *
+
+B<added namespace abbreviations in proppatch>
+
+Thanks to Jeremy for this patch.
+
+=item *
+
+B<improved redirect handling in Comms.pm>
+
+Thanks to Jeremy for this patch.
+
+=back
+
 =head2 v0.23 (released 2001/09/07):
 
 =over 4
@@ -52,7 +98,6 @@ I wrote dave (the DAV Explorer) because I needed an end-user application that al
 B<A new and simpler API>
 
 This new API is accessed directly through the HTTP::DAV module and is based on the core API written in previous releases. 
-
 
 =item * 
 

@@ -1,7 +1,7 @@
-# $Id: Response.pm,v 0.11 2001/09/01 19:48:14 pcollins Exp $
+# $Id: Response.pm,v 0.12 2001/10/27 18:05:50 pcollins Exp $
 package HTTP::DAV::Response;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.11 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.12 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars qw(@ISA);
@@ -150,10 +150,10 @@ sub as_string {
    my ($self) = @_;
    my ($ms, $returnstr) = "";
 
+#   use Data::Dumper;
+#   print Data::Dumper->Dump( [\$self] , [ '$self' ] );
    foreach my $num ( 0 .. $self->response_count() ) {
       my %h = %{$self->{_dav_multistatus}[$num]};
-      #use Data::Dumper;
-      #print Data::Dumper->Dump( [\%h] , [ '%h' ] );
       $ms .= "Error number $num ($h{handle}):\n";
       $ms .= "   Href:       $h{url}\n"                 if defined $h{url};
       $ms .= "   Mesg(code): $h{message} ($h{code})\n"  if defined $h{code};

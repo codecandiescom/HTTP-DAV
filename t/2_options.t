@@ -2,30 +2,20 @@
 use strict;
 use HTTP::DAV;
 use Test;
+use lib 't';
+use TestDetails qw($test_user $test_pass $test_url do_test fail_tests test_callback);
 
 my $TESTS;
-BEGIN { 
-   require "t/TestDetails.pm"; import TestDetails;
-   $TESTS = 6;
-   plan tests => $TESTS; 
-}
+$TESTS = 6;
+plan tests => $TESTS; 
+fail_tests($TESTS) unless $test_url =~ /http/;
 
 my $dav = HTTP::DAV->new;
 $dav->DebugLevel(3);
 
-if ( TestDetails::url() !~ /http/ ) {
-   print  "You need to set a test url in the t/TestDetails.pm module.\n";
-   for(1..$TESTS) { skip(1,1); }
-   exit;
-}
+$dav->credentials( $test_user, $test_pass, $test_url );
 
-$dav->credentials(
-        TestDetails::user(),
-        TestDetails::pass(),
-        TestDetails::url() 
-      );
-
-my $resource = $dav->new_resource( -uri => TestDetails::url() );
+my $resource = $dav->new_resource( -uri => $test_url );
 my $response = $resource->options();
 if ( ! ok($response->is_success) ) {
    print $response->message() ."\n";
@@ -40,4 +30,4 @@ ok($options,'/PROPFIND/');
 ok($resource->is_option('PROPFIND'),1);
 ok($resource->is_option('JUNKOPTION'),0);
    
-ok($resource->get_username(),TestDetails::user());
+ok($resource->get_username(),$test_user);

@@ -2,59 +2,22 @@
 use strict;
 use HTTP::DAV;
 use Test;
-use Cwd;
+use lib 't';
+use TestDetails qw($test_user $test_pass $test_url $test_cwd do_test fail_tests test_callback);
 
 # Tests advanced locking, like shared locks and steal locks
 
 my $TESTS;
-BEGIN {
-    require "t/TestDetails.pm"; import TestDetails;
-    $TESTS=11;
-    plan tests => $TESTS
-}
+$TESTS=11;
+plan tests => $TESTS;
+fail_tests($TESTS) unless $test_url =~ /http/;
 
-TestDetails::method('LOCK');
+my $user = $test_user;
+my $pass = $test_pass;
+my $url = $test_url;
+my $cwd = $test_cwd; # Remember where we started.
 
-# I'll skip all the tests if you haven't set a default url
-if ( TestDetails::url() !~ /http/ ) {
-   print  "You need to set a test url in the t/TestDetails.pm module.\n";
-   for(1..$TESTS) { skip(1,1); }
-   exit;
-}
-
-my $user = TestDetails::user();
-my $pass = TestDetails::pass();
-my $url = TestDetails::url();
-my $cwd = getcwd(); # Remember where we started.
-
-HTTP::DAV::DebugLevel(3);
-
-######################################################################
-# UTILITY FUNCTION: 
-#    do_test <op_result>, <expected_result>, <message>
-# IT was getting tedious doing the error handling so 
-# I built this little routine, Makes the test cases easier to read.
-sub do_test {
-   my($dav,$result,$expected,$message) = @_;
-   $expected = 1 if !defined $expected;
-   my $ok;
-   my $davmsg = $dav->message;
-   if ($expected) {
-      if ( $ok = ok($result,$expected) ) {
-         print "$message succeeded\n";
-      } else {
-         print "$message failed: \"$davmsg\"\n";
-      }
-   } else {
-      if ( $ok = ok($result,$expected) ) {
-         print "$message failed (as expected): \"$davmsg\"\n";
-      } else {
-         print "$message succeeded (unexpectedly): \"$davmsg\"\n";
-      }
-   }
-   return $ok;
-}
-######################################################################
+HTTP::DAV::DebugLevel(1);
 
 # Make a directory with our process id after it 
 # so that it is somewhat random

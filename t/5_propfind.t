@@ -2,33 +2,25 @@
 use strict;
 use HTTP::DAV;
 use Test;
+use lib 't';
+use TestDetails qw($test_user $test_pass $test_url do_test fail_tests test_callback);
 
 # Sends out a propfind request to the server 
 # specified in "PROPFIND" in the TestDetails 
 # module.
 
 my $TESTS;
-BEGIN {
-    require "t/TestDetails.pm"; import TestDetails;
-    $TESTS=9;
-    plan tests => $TESTS
-}
+$TESTS=9;
+plan tests => $TESTS;
+fail_tests($TESTS) unless $test_url =~ /http/;
 
 my $dav = HTTP::DAV->new;
 HTTP::DAV::DebugLevel(3);
-TestDetails::method('COLL');
 
-if ( TestDetails::url() !~ /http/ ) {
-   print  "You need to set a test url in the t/TestDetails.pm module.\n";
-   for(1..$TESTS) { skip(1,1); }
-   exit;
-}
-
-
-$dav->credentials( TestDetails::user(), TestDetails::pass(), TestDetails::url());
+$dav->credentials( $test_user,$test_pass,$test_url );
 
 my $response;
-my $resource = $dav->new_resource( -uri => TestDetails::url() );
+my $resource = $dav->new_resource( -uri => $test_url );
 
 ######################################################################
 # RUN THE TESTS

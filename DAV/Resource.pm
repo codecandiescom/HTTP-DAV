@@ -1,4 +1,4 @@
-# $Id: Resource.pm,v 0.24 2001/09/07 17:23:38 pcollins Exp $
+# $Id: Resource.pm,v 0.28 2001/10/30 15:47:57 pcollins Exp $
 package HTTP::DAV::Resource;
 
 use HTTP::DAV;
@@ -8,7 +8,7 @@ use HTTP::Date qw(str2time);
 use HTTP::DAV::ResourceList;
 use URI::Escape;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.24 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.28 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION); 
@@ -35,7 +35,7 @@ sub _init {
 
    # Optionally add a scheme.
    $uri =~ s/^\s*(.*?)\s*$/$1/g; # Remove leading and trailing slashes
-   $uri = "http://$uri" if ($uri ne "" && $uri !~ /^http:\/\//);
+   $uri = "http://$uri" if ($uri ne "" && $uri !~ /^https?:\/\//);
 
 
    $self->{ "_uri" }                = $uri                  ||"";
@@ -72,8 +72,9 @@ sub _init {
 sub set_parent_resourcelist { $_[0]->{_parent_resourcelist} = $_[1]; }
 sub set_property   { $_[0]->{_properties}{$_[1]} = $_[2];  }
 
+sub set_uri        { $_[0]->{_uri}  = HTTP::DAV::Utils::make_uri($_[1]); }
+
 # PRIVATE SUBROUTINES
-sub _set_uri        { $_[0]->{_uri}  = HTTP::DAV::Utils::make_uri($_[1]); }
 sub _set_content    { $_[0]->{_content}    = $_[1]; }
 sub _set_options    { $_[0]->{_options}    = $_[1]; }
 sub _set_compliance { $_[0]->{_compliance} = $_[1]; }
@@ -85,7 +86,8 @@ sub set_locks {
    # But keep their name temporarily because some of them 
    # may be ours.
    my @old_lock_tokens = keys %{$self->{_locks}} || ();
-   if (@locks && defined $self->{_locks}) {
+   #if (@locks && defined $self->{_locks}) {
+   if (defined $self->{_locks}) {
       delete $self->{_locks};
    }
 
@@ -423,7 +425,7 @@ sub propfind {
    $depth = 1 unless ( defined $depth && $depth ne "" );
     
    ####
-   # Setup the headers for the lock request
+   # Setup the headers for the request
    my $headers = new HTTP::Headers;
    $headers->header("Content-type", "text/xml; charset=\"utf-8\"");
    $headers->header("Depth", $depth);
@@ -463,6 +465,8 @@ sub propfind {
 
       if ($resource_list && $resource_list->count_resources() ) {
          $self->{_resource_list} = $resource_list;
+      } else {
+         $self->{_resource_list} = undef;
       }
 
       $doc->dispose;
@@ -475,11 +479,17 @@ sub propfind {
 ###########################################################################
 # get/GET the body contents
 sub get {
-   my ($self) = @_;
+   my ($self,@p) = @_;
+
+   my($save_to,$progress_callback,$chunk) = 
+      HTTP::DAV::Utils::rearrange(['SAVE_TO','PROGRESS_CALLBACK','CHUNK'],@p);
 
    my $resp = $self->{_comms}->do_http_request ( 
       -method => "GET", 
       -uri    =>  $self->get_uri,
+      -save_to  => $save_to,
+      -callback => $progress_callback,
+      -chunk  => $chunk
       ); 
 
    # What to do with all of the headers in the response. Put 
@@ -490,7 +500,7 @@ sub get {
 
    return $resp;
 }
-sub GET { my $self=shift; $self->get( @_ ); }
+sub GET { shift->get( @_ ); }
 
 ###########################################################################
 # put/PUT the body contents
@@ -626,16 +636,31 @@ sub _move_copy {
    $overwrite = "F" if (defined $overwrite && $overwrite eq "0");
    $overwrite = (defined $overwrite && $overwrite eq "F")?"F":"T";
 
-   # Destination Resource must have a URL
-   my $dest_url = $dest_resource->get_uri;
-
    ####
    # Setup the headers for the lock request
    my $headers = new HTTP::Headers;
    $headers->header("Depth", $depth);
    $headers->header("Overwrite", $overwrite);
-   #print "$dest_url\n";
-   $headers->header("Destination", $dest_url->as_string);
+
+   # Destination Resource must have a URL
+   my $dest_url = $dest_resource->get_uri;
+   my $server_type = $self->{_comms}->get_server_type( $dest_url->host_port() );
+
+   # We workaround
+   if ( $server_type =~ /Apache/i && $server_type =~ /DAV\//i ) {
+      my $dest_str = "http://" . $dest_url->host_port . $dest_url->path; 
+
+      if ($HTTP::DAV::DEBUG) {
+         print "*** INSTIGATING mod_dav WORKAROUND FOR DESTINATION HEADER BUG IN Resource::_move_copy\n";
+         print "*** Server type of " . $dest_url->host_port() . ": $server_type\n";
+         print "*** Setting Destination: header to $dest_str\n";
+         print "*** instead of $dest_url\n";
+      }
+
+      $headers->header("Destination", $dest_str);
+   } else {
+      $headers->header("Destination", $dest_url->as_string);
+   }
 
    # Join both the If headers together.
    $self         ->_setup_if_headers($headers,1);
@@ -691,7 +716,15 @@ sub _move_copy {
    # MOVE EATS SOURCE LOCKS
    if ($method eq "MOVE" ) {
       $self->_unset_my_locks();
-      #$dest_resource->_unset_my_locks(); #not required
+
+      # Well... I'm baffled.
+      # I previousy had this commented out because my 
+      # undestanding was that the dest lock stayed in tact.
+      # But mod_dav seems to remove it after a move. So,
+      # I'm going to fall in line, but if another server 
+      # implements this differently, then I'm going to have 
+      # to pipe up and get them to sort out their differences :)
+      #$dest_resource->_unset_my_locks(); 
    }
 
    return $resp;
@@ -702,8 +735,11 @@ sub _move_copy {
 sub proppatch {
    my ($self,@p) = @_;
 
-   my($namespace,$propname,$propvalue,$action) = HTTP::DAV::Utils::rearrange(
-   ['NAMESPACE','PROPNAME','PROPVALUE','ACTION'],@p);
+   my($namespace,$propname,$propvalue,$action,$use_nsabbr) = 
+       HTTP::DAV::Utils::rearrange(
+          ['NAMESPACE','PROPNAME','PROPVALUE','ACTION','NSABBR'],@p);
+
+   $use_nsabbr ||= 'R';
 
    # Sanity check. If action ain't 'remove' then set it to 'set';
    $action = (defined $action && $action eq "remove")?"remove":"set";
@@ -715,26 +751,41 @@ sub proppatch {
    $self->_setup_if_headers($headers);
 
    my $xml_request = qq{<?xml version="1.0" encoding="utf-8"?>};
-   $xml_request .= "<D:propertyupdate xmlns:D=\"DAV:\">";
-   $xml_request .= "<D:$action>";
+#   $xml_request .= "<D:propertyupdate xmlns:D=\"DAV:\">";
+#   $xml_request .= "<D:$action>";
 
+   $xml_request .= "<D:propertyupdate xmlns:D=\"DAV:\"";
    $namespace||="";
+   my $nsabbr = 'D';
+
    if ($namespace =~ /dav/i || $namespace eq "") {
-     $xml_request .= "<D:prop>";
-     if ($action eq "set" ) {
-        $xml_request .= "<D:$propname>$propvalue</D:$propname>";
-     } else {
-        $xml_request .= "<D:$propname/>";
-     }
+#     $xml_request .= "<D:prop>";
+#     if ($action eq "set" ) {
+#        $xml_request .= "<D:$propname>$propvalue</D:$propname>";
+#     } else {
+#        $xml_request .= "<D:$propname/>";
+#     }
+      $xml_request .= ">";
+   } else {
+         $nsabbr = $use_nsabbr;
+         $xml_request .= " xmlns:$nsabbr=\"$namespace\">";
    }
-   else {
-     $xml_request .= "<D:prop xmlns:R=\"".$namespace."\">";
-     if ($action eq "set" ) {
-        $xml_request .= "<R:$propname>$propvalue</R:$propname>";
-     } else {
-        $xml_request .= "<R:$propname/>";
-     }
+#   else {
+#     $xml_request .= "<D:prop xmlns:R=\"".$namespace."\">";
+#     if ($action eq "set" ) {
+#        $xml_request .= "<R:$propname>$propvalue</R:$propname>";
+#     } else {
+#        $xml_request .= "<R:$propname/>";
+#     }
+   $xml_request .= "<D:$action>";
+   $xml_request .= "<D:prop>";
+
+   if ($action eq "set" ) {
+      $xml_request .= "<$nsabbr:$propname>$propvalue</$nsabbr:$propname>";
+   } else {
+      $xml_request .= "<$nsabbr:$propname/>";
    }
+
    $xml_request .= "</D:prop>";
    $xml_request .= "</D:$action>";
    $xml_request .= "</D:propertyupdate>";
@@ -990,6 +1041,7 @@ sub _XML_parse_status {
 # resourcetype
 # supportedlock
 # lockdiscovery
+# source
 
 sub _XML_parse_and_store_props {
    my ($self,$node) = @_;
@@ -1034,11 +1086,15 @@ sub _XML_parse_and_store_props {
       elsif ( $prop_name eq "supportedlock" ) {
          my $supportedlock_hashref= 
             HTTP::DAV::Lock::get_supportedlock_details( $prop );
-#use Data::Dumper;
-#print Data::Dumper->Dump( [$supportedlock_hashref] , [ '$supportedlock_hashref' ] );
-
          $self->set_property( "supportedlocks", $supportedlock_hashref );
       }
+
+# Work in progress
+#      elsif ( $prop_name eq "source" ) {
+#         my $links = $self->_XML_parse_source_links( $prop );
+#         $self->set_property( "supportedlocks", $supportedlock_hashref );
+#      }
+
 
       #resourcetype and others 
       else {
@@ -1062,7 +1118,7 @@ sub _XML_parse_and_store_props {
       ) {
       $self->set_property( "resourcetype", "collection" );
       my $uri= HTTP::DAV::Utils::make_trail_slash($self->get_uri);
-      $self->_set_uri($uri);
+      $self->set_uri($uri);
    }
 
    # Clean up the date work.
@@ -1093,7 +1149,7 @@ sub _setup_if_headers {
    $tagged = 1 unless defined $tagged;
    my $if = $self->{_lockedresourcelist}->tokens_to_if_header($tokens,$tagged);
    $headers->header( "If", $if ) if $if;
-   print "Setting if_header to \"If: $if\"\n" if $if && $HTTP::DAV::DEBUG>2;
+   print "Setting if_header to \"If: $if\"\n" if $if && $HTTP::DAV::DEBUG;
 }
 
 ###########################################################################
@@ -1462,7 +1518,7 @@ Will use a Lock header if this resource was previously locked.
 
 =item B<proppatch>
 
-Not implemented 
+xxx
 
 =item B<propfind>
 

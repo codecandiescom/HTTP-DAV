@@ -2,27 +2,22 @@
 use strict;
 use HTTP::DAV;
 use Test;
+use lib 't';
+use TestDetails qw($test_user $test_pass $test_url do_test fail_tests test_callback);
 
 my $TESTS;
-BEGIN {
-    require "t/TestDetails.pm"; import TestDetails;
-    $TESTS = 6;
-    plan tests => $TESTS
-}
+$TESTS = 6;
+plan tests => $TESTS;
+fail_tests($TESTS) unless $test_url =~ /http/;
+
 
 
 my $dav = HTTP::DAV->new;
 HTTP::DAV::DebugLevel(3);
 
-if ( TestDetails::url() !~ /http/ ) {
-   print  "You need to set a test url in the t/TestDetails.pm module.\n";
-   for(1..$TESTS) { skip(1,1); }
-   exit;
-}
+$dav->credentials( $test_user,$test_pass,$test_url );
 
-$dav->credentials( TestDetails::user(), TestDetails::pass(), TestDetails::url());
-
-my $collection = TestDetails::url();
+my $collection = $test_url;
 $collection=~ s#/$##g; # Remove trailing slash. We'll put it on.
 my $new_file = "$collection/dav_test_file.txt";
 print "File: $new_file\n";

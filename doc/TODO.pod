@@ -1,11 +1,5 @@
-
 =for html
-<div id="content">
-<H1>
-TODO
-</H1>
-</div>
-<div id="content">
+<div id="content"><H1>TODO</H1></div><div id="content">
 
 =begin text
 
@@ -13,16 +7,27 @@ TODO
 
 =end text
 
-
-
 =head2 dave
 
+   - globs on lock(),unlock(),steal(),options()?,move(),copy(),propfind(),proppatch() (and set/unset).
+   - rework ls to use globs.
    - multistatus responses don't come through nicely.
 
-=head2 DAV.pm
+=head2 HTTP::DAV
 
-   - redo POD for DAV.pm, Resource.pm
-   - dist prog to remove all login details
+   - LWP doesn't allow callback on upload, only download. This means
+     we can't do progress indicators on "PUT". How to do it? Could patch
+     LWP? Specialise LWP::UserAgent? Ugh.
+   - doco globs in DAV.pm
+   - fix get references
+   - _put calls propfind on every call throughout a recursive _put().
+     need to adjust this so that it does it only once, in put(). After 
+     the first time, we should be able to KNOW whether it is a collection
+     or not instead of having to propfind to find out becasue in theory
+     WE were the ones who put the file there.
+
+   - finish "source" property in DAV::Resource.pm
+   - redo POD Resource.pm
 
    - setup_if_headers need to get just Rsource's locks not all RL's locks.
    - discovery still isn't resetting locks properly ????
@@ -34,7 +39,6 @@ TODO
 
 =head2 Wishlist functions
 
-   - try using LWP's Digest mechanism, https and http11.pm 
    - testing against Zope
    - dave:implement netrc?
    - dave:tab completion? history?
@@ -56,12 +60,12 @@ TODO
    - DAV Delta-V
    - DAV ACL's
 
-$Id: TODO.pod,v 1.4 2001/09/07 17:24:21 pcollins Exp $
+$Id: TODO.pod,v 1.9 2001/10/30 15:48:30 pcollins Exp $
 
 
 =for text
 ** This file was automatically generated from **
-** doc/Changes.pod. To edit it, see there.    **
+** doc/TODO.pod. To edit it, see there.    **
 
 
 =for html </div>

@@ -1,2 +1,0 @@
-Test data for the test suite.
-Well. This is file 1. Hope you like it.

@@ -1,7 +1,7 @@
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
-# $Id: Makefile.PL,v 0.8 2001/09/03 20:12:51 pcollins Exp $
+# $Id: Makefile.PL,v 0.9 2001/10/28 08:38:01 pcollins Exp $
 
 
 my @programs_to_install = qw(dave);
@@ -14,7 +14,7 @@ WriteMakefile(
                          PREOP => 'bin/dist' },
     'EXE_FILES'     => [ map {"bin/$_"} @programs_to_install ],
     'PREREQ_PM' => { 
-        'LWP' => 5.48,      # DAV requires LWP
-        'XML::DOM' => 0, # DAV requires XML::DOM
+        'LWP' => 5.48,    # DAV requires LWP
+        'XML::DOM' => 0,  # DAV requires XML::DOM
     },
 );

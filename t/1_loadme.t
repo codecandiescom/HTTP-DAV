@@ -1,9 +1,10 @@
 #!/usr/local/bin/perl -w
 use strict;
 use Test;
+use lib 't';
+use TestDetails ();
 
 BEGIN {
-    require "t/TestDetails.pm"; import TestDetails;
     plan tests => 1;
 
     $SIG{__WARN__} = sub {

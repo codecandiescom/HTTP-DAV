@@ -1,4 +1,4 @@
-$Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+$Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
 
 =for html 
 <div id="content">
@@ -31,67 +31,53 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.23 (released 2001/09/07 17:22:11)
+The latest version is: v0.29 (released 2001/10/30 15:47:10)
 
 Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
-=head2 What's New for v0.23:
+=head2 What's new
 
 =over 4
 
 =item *
 
-B<file globbing for get and put>
+B<https>
 
-HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This functionality also propagates to dave. This allows you to do the following:
-
- dav> put /tmp/index*.html
- dav> get index[12].htm? /tmp
-
- ?,* and sets ([]) are supported. See the docs for details.
-
-HTTP::DAV now requires the Perl module File::Glob which comes bundled with perl5.6 and later.
+https support as provided from the underlying LWP library has been tested against mod_dav and mod_ssl. Seems to work well. See INSTALLATION for more detail.
 
 =item *
 
-bug fix in -overwrite flag in HTTP::DAV::copy/move.
+B<Digest authentication>
 
-=back
-
-=head2 What's New for v0.22:
-
-=over 4
+Requires MD5 to be installed. See INSTALLATION notes.
 
 =item *
 
-B<dave -- the new command line client>
-
-I wrote dave (the DAV Explorer) because I needed an end-user application that allowed me to "feel" how well the HTTP::DAV API was performing. dave is quite similar to Joe Orton's C-based DAV client called cadaver (yes, imitation is the best form of flattery).
+B<various bug fixes>
 
 =item *
 
-B<A new and simpler API>
+B<more powerful callback support for get()>
 
-This new API is accessed directly through the HTTP::DAV module and is based on the core API written in previous releases. 
-
-
-=item * 
-
-B<new methods>
-
-The new API now supports, proppatch, recursive get, recursive put and steal locks.
+Useful for giving progress indicators.
 
 =item *
 
-B<A substantial core API overhaul>
+B<get() to filehandles and scalar references>
 
-Moving from v0.05 to v0.22 in one release might indicate the amount of work gone into this release.
+the get() routine now allows you to pass by reference a filehandle or scalar in which to save the contents of the GET request.
 
 =item *
 
-B<A new interoperability test suite>
+B<added namespace abbreviations in proppatch>
 
-is now included in PerlDAV. The test suite is built on top of the standard Perl Test::Harness modules. Still in development, the test suite is highlighting interoperability problems with DAV-servers a lot quicker than before. See L<the test suite & interoperability> section.
+Thanks to Jeremy for this patch.
+
+=item *
+
+B<improved redirect handling in Comms.pm>
+
+Thanks to Jeremy for this patch.
 
 =back
 
@@ -135,7 +121,8 @@ LWP (Have not tested lower than v5.48)
 
 =item * 
 
-XML::DOM (Have not tested lower than v1.26) 
+XML::DOM (Have not tested lower than v1.26). 
+Requires James Clark's expat library:
 
 =item *
 
@@ -143,13 +130,29 @@ Perl5 (Have not tested lower than v5.005)
 
 =back
 
+=head2 Optional Prerequisites.
+
+=over 4
+
+=item *
+
+Crypt::SSLeay if you'd like to use https. Crypt::SSLeay requires the openssl library as well. See Crypt::SSLeay's excellent install instructions for how to get https support into LWP (and hence HTTP::DAV). I've tested HTTP::DAV and Crypt::SSLeay against Apache/mod_dav with the mod_ssl plugin. Works seamlessly.
+
+=item *
+
+MD5 if you'd like to use LWP's Digest authentication.
+
+=back
+
 To get the latest versions of these prerequisite modules you can simply type this at the command prompt:
 
+   $ <install expat>
+then:
    $ perl -MCPAN -e shell
    cpan> install LWP
    cpan> install XML::DOM
 
-or if you just 'install HTTP::DAV' the lovely CPAN module should just magically install all of the prerequisites for you.
+or if you just 'install HTTP::DAV' the lovely CPAN module should just magically install all of the prerequisites for you (you'll still need to manually instal expat though).
 
 =head2 What Systems Does It Work With?
 
@@ -160,7 +163,7 @@ HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later).  I have not
 Once you've installed PerlDAV, you can type: 
 
    $ perldoc HTTP::DAV
-   $ perldoc dave
+   $ man dave
 
 =for html
 <P>Or you can view them here:
@@ -238,7 +241,7 @@ All rights reserved.
 
 You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
 
-$Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+$Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
 
 =cut
 

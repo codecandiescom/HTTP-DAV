@@ -1,4 +1,4 @@
-# $Id: Comms.pm,v 0.16 2001/09/02 08:46:36 pcollins Exp $
+# $Id: Comms.pm,v 0.20 2001/10/30 15:47:57 pcollins Exp $
 package HTTP::DAV::Comms;
 
 use HTTP::DAV::Utils;
@@ -6,10 +6,15 @@ use HTTP::DAV::Response;
 use LWP;
 use URI;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.16 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.20 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION $DEBUG);
+{
+  no warnings;
+  BEGIN { *LWP::UserAgent::redirect_ok = sub { 0 } }
+}
+
 
 ####
 # Construct a new object and initialize it
@@ -77,6 +82,26 @@ sub set_headers {
 sub _set_last_request  { $_[0]->{_last_request}  = $_[1]; }
 sub _set_last_response { $_[0]->{_last_response} = $_[1]; }
 
+# Save the Server: header line into this object instance
+# We will want to use it later to workaround server bugs.
+# For instance mod_dav has a bug in the Destination: header
+# whereby it incorrectly throws "Bad Gateway" errors.
+# The only way we can munge around this is if the copy() routine 
+# has some idea of the server it is talking to.
+# So this routine stores the "Server: Apache..." line into a host:port hash (i.e. localhost:443).
+# so $comms->_set_server_type( "host.org:443", "Apache/1.3.22 (Unix) DAV/1.0.2 ")
+# yields
+#     %_server_type = { 
+#        "host.org:443" => "Apache/1.3.22 (Unix) DAV/1.0.2 SSL" 
+#        "host.org:80" =>  "Apache/1.3.22 (Unix) DAV/1.0.2 " 
+#        };
+# Note that this is an instance hash NOT a class hash.
+# So each comms object will be learning independently.
+sub _set_server_type { $_[0]->{_server_type}{$_[1]} = $_[2]; }
+
+# $server = $comms->get_server_type( "host.org:443" )
+sub get_server_type { $_[0]->{_server_type}{$_[1]} }
+
 # Returns an HTTP::Request object
 sub get_last_request  { $_[0]->{_last_request};  }
 
@@ -89,8 +114,8 @@ sub get_last_response { $_[0]->{_last_response}; }
 sub do_http_request {
    my ($self, @p ) = @_;
 
-   my ($method,$url,$newheaders,$content) = 
-      HTTP::DAV::Utils::rearrange( ['METHOD', ['URL','URI'], 'HEADERS', 'CONTENT'],@p );
+   my ($method,$url,$newheaders,$content,$save_to,$callback_func,$chunk) = 
+      HTTP::DAV::Utils::rearrange( ['METHOD', ['URL','URI'], 'HEADERS', 'CONTENT', 'SAVE_TO', 'CALLBACK','CHUNK'],@p );
 
    # Method management
    if (! defined $method || $method eq "" || $method !~ /^\w+$/ ) {
@@ -102,7 +127,7 @@ sub do_http_request {
    my $url_obj;
    $url_obj = (ref($url) =~ /URI/)? $url : URI->new($url);
 
-   die "Comms: Bad HTTP Url: \"$url_obj\"\n" if ($url_obj->scheme ne "http" );
+   die "Comms: Bad HTTP Url: \"$url_obj\"\n" if ($url_obj->scheme !~ /^http/ );
 
    # If you see user:pass detail embedded in the URL. Then get it out.
    if ( $url_obj->userinfo ) {
@@ -119,10 +144,8 @@ sub do_http_request {
    $headers->add_headers( $self->{_headers} );
    $headers->add_headers( $newheaders );
 
+   #$headers->header("Host", $url_obj->host);
    $headers->header("Host", $url_obj->host_port);
-   #$headers->header("Authorization", "Basic cGNvbGxpbnM6dGVzdDEyMw==");
-   #$headers->header("Connection", "TE");
-   #$headers->header("TE", "trailers");
 
    my $length = ($content) ? length($content) : 0;
    $headers->header("Content-Length", $length);
@@ -149,10 +172,67 @@ sub do_http_request {
          $headers->to_http_headers, 
          $content 
       );
+
+
    # It really bugs me, but libwww-perl doesn't honour this call.
    # I'll leave it here anyway for future compatibility.
    $req->protocol("HTTP/1.1");
-   my $resp = $self->{_user_agent}->request($req);
+
+   my $resp;
+
+   # If a callback is set and it is a ref to a function
+   # then pass it through to LWP::UserAgent::request.
+   # See man page of LWP for more details of callback.
+   # callback is primarily used by DAV::get();
+   #
+   if ( defined $save_to && $save_to ne "" ) {
+      $resp = $self->{_user_agent}->request($req,$save_to);
+   }
+   elsif ( ref($callback_func) =~ /CODE/ ) {
+      $resp = $self->{_user_agent}->request($req,$callback_func,$chunk);
+   } else {
+      $resp = $self->{_user_agent}->request($req);
+   }
+
+   # Redirect loop {{{
+   my $code = $resp->code;
+   if ($code == &HTTP::Status::RC_MOVED_PERMANENTLY or
+   $code == &HTTP::Status::RC_MOVED_TEMPORARILY) {
+
+     # And then we update the URL based on the Location:-header.
+     my($referral_uri) = $resp->header('Location');
+     {
+         # Some servers erroneously return a relative URL for redirects,
+         # so make it absolute if it not already is.
+         local $URI::ABS_ALLOW_RELATIVE_SCHEME = 1;
+         my $base = $resp->base;
+         $referral_uri = $HTTP::URI_CLASS->new($referral_uri, $base)
+                   ->abs($base);
+     }
+
+     # Check for loop in the redirects
+     my $count = 0;
+     my $r = $resp;
+     while ($r) {
+         if (++$count > 13 ||
+                   $r->request->url->as_string eq $referral_uri->as_string) {
+       $resp->header("Client-Warning" =>
+             "Redirect loop detected");
+       return $resp;
+         }
+         $r = $r->previous;
+     }
+     return $self->do_http_request (
+            -method  => $method,
+            -url     => $referral_uri,
+            -headers => $newheaders,
+            -content => $content,
+            -saveto => $save_to,
+            -callback => $callback_func,
+            -chunk => $chunk,
+    );
+  }
+  # }}}
 
    if ( $HTTP::DAV::DEBUG > 1 ) {
       no warnings;
@@ -191,6 +271,8 @@ sub do_http_request {
    # Save the req and resp objects as the "last used"
    $self->_set_last_request ($req);
    $self->_set_last_response($dav_resp);
+
+   $self->_set_server_type($url_obj->host_port, $dav_resp->headers->header("Server"));
 
    return $dav_resp;
 }
@@ -253,6 +335,7 @@ sub credentials {
         no warnings; # SHUTUP with your silly warnings.
         $userpass=
            $self->{'basic_authentication'}{$netloc}{$realm}  ||
+           $self->{'basic_authentication'}{default}{$realm}  ||
            $self->{'basic_authentication'}{$netloc}{default} ||
            [];
 

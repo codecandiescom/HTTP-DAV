@@ -8,7 +8,7 @@ use Test;
 my $TESTS;
 BEGIN {
     $TESTS=6;
-    plan tests => $TESTS
+    plan tests => $TESTS;
 }
 
 

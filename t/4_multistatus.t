@@ -2,21 +2,17 @@
 use strict;
 use HTTP::DAV;
 use Test;
+use lib 't';
 
 # Tests Response.pm's ability to handle multistatus documents.
 # Prerequisite: Resource.pm's _XML_parse_multistatus works.
 
 my $TESTS;
-BEGIN {
-    require "t/TestDetails.pm"; import TestDetails;
-    $TESTS=20;
-    plan tests => $TESTS
-}
-
+$TESTS=20;
+plan tests => $TESTS;
 
 my $dav = HTTP::DAV->new;
 HTTP::DAV::DebugLevel(3);
-TestDetails::method('PROPFIND');
 
 my $resource = $dav->new_resource( -uri => 'http://testserver:8080/test/' );
 
