@@ -1,14 +1,17 @@
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+# $Id: Makefile.PL,v 0.8 2001/09/03 20:12:51 pcollins Exp $
 
-my @programs_to_install = qw(dav.pl);
+
+my @programs_to_install = qw(dave);
 
 WriteMakefile(
     'NAME'	=> 'HTTP::DAV',
     'VERSION_FROM' => 'DAV.pm', # finds $VERSION
     'dist'          => { COMPRESS => 'gzip -9f --best',
-                         SUFFIX => '.gz' },
+                         SUFFIX => '.gz',
+                         PREOP => 'bin/dist' },
     'EXE_FILES'     => [ map {"bin/$_"} @programs_to_install ],
     'PREREQ_PM' => { 
         'LWP' => 5.48,      # DAV requires LWP

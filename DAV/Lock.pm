@@ -1,10 +1,9 @@
-# $Id: Lock.pm,v 0.4 2001/07/24 15:56:00 pcollins Exp $
+# $Id: Lock.pm,v 0.8 2001/08/28 16:27:57 pcollins Exp $
 package HTTP::DAV::Lock;
 
-use XML::DOM;
 use HTTP::DAV::Utils;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.8 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
@@ -43,6 +42,9 @@ sub _init {
 sub get_owner { $_[0]->{_owner}; }
 sub get_token { $_[0]->{_token}; }
 sub get_depth { $_[0]->{_depth}; }
+sub get_timeout { $_[0]->{_timeout}; }
+sub get_locktoken { $_[0]->{_locktokens}[0]; }
+sub get_locktokens{ $_[0]->{_locktokens}; }
 
 sub set_scope     { $_[0]->{_scope}     = $_[1]; }
 sub set_owned     { $_[0]->{_owned}     = $_[1]; }
@@ -54,11 +56,11 @@ sub set_locktoken {
    my ($self,$href) = @_;
    # Remove leading and trailing space from "  http://.../..."
    $href =~ s/^\s*//g; $href =~ s/\s*$//g; 
+   # Remove < > from around it available
+   $href =~ s/^<(.*)>$/$1/g;
+
    push (@{$self->{_locktokens}}, $href); 
 }
-
-sub get_locktoken { $_[0]->{_locktokens}[0]; }
-sub get_locktokens{ $_[0]->{_locktokens}; }
 
 # IS
 sub is_owned { $_[0]->{_owned}; }
@@ -74,7 +76,6 @@ sub is_owned { $_[0]->{_owned}; }
 # )
 sub make_lock_xml {
    my ($self,@p) = @_;
-
    my($owner,$timeout,$scope,$type,@other) = 
       HTTP::DAV::Utils::rearrange(['OWNER','TIMEOUT','SCOPE','TYPE'],@p);  
 
@@ -94,18 +95,29 @@ sub make_lock_xml {
    $xml_request .= "<D:lockinfo xmlns:D='DAV:'>\n";
    $xml_request .= "<D:lockscope><D:$scope/></D:lockscope>\n";
    $xml_request .= "<D:locktype><D:$type/></D:locktype>\n";
+#$xml_request = <<END;
+#<?xml version="1.0" encoding="utf-8"?>
+#<lockinfo xmlns='DAV:'>
+#<lockscope><$scope/></lockscope>
+#<locktype><$type/></locktype>
+##</lockinfo>
+#END
+
 
    # If the owner is an HREF then set it into an <D:href> tag 
    # else just enter it as text.
    my $o = URI->new($owner);
    if ($o->scheme) {
       $xml_request .= "<D:owner><D:href>$owner</D:href></D:owner>\n";
+      #$xml_request .= "<owner><href>$owner</href></owner>\n";
    } elsif ( $owner ) {
       $xml_request .= "<D:owner>$owner</D:owner>\n";
+      #$xml_request .= "<owner>$owner</owner>\n";
    }
 
    $xml_request .= "</D:lockinfo>\n";
-  
+   #$xml_request .= "</lockinfo>\n";
+ 
    return ($xml_request);
 }
 
@@ -138,7 +150,7 @@ sub XML_lockdiscovery_parse {
    # <!ELEMENT activelock (lockscope, locktype, depth, owner?, timeout?, locktoken?) >
    foreach my $node_activelock ( @nodes_activelock ) {
 
-      my $lock = HTTP::DAV::Lock->new(-owner=>1);
+      my $lock = HTTP::DAV::Lock->new();
       push(@found_locks,$lock);
    
       my $nodes_lock_params = $node_activelock->getChildNodes();
@@ -157,13 +169,13 @@ sub XML_lockdiscovery_parse {
          # 6. <!ELEMENT locktoken (href+) >
 
          my $lock_prop_name = $node_lock_param->getNodeName();
-         $lock_prop_name =~ s/D.*:(.*)/$1/g;
+         $lock_prop_name =~ s/.*:(.*)/$1/g;
    
          # 1. RFC2518 currently only allows locktype of exclusive or shared
          if ( $lock_prop_name eq "lockscope" ) {
             my $node_lock_scope = HTTP::DAV::Utils::get_only_element($node_lock_param);
             my $lock_scope = $node_lock_scope->getNodeName;
-            $lock_scope =~ s/D.*:(.*)/$1/g;
+            $lock_scope =~ s/.*:(.*)/$1/g;
             $lock->set_scope($lock_scope);
          } 
    
@@ -171,11 +183,11 @@ sub XML_lockdiscovery_parse {
          elsif ( $lock_prop_name eq "locktype" ) {
             my $node_lock_type = HTTP::DAV::Utils::get_only_element($node_lock_param);
             my $lock_type = $node_lock_type->getNodeName;
-            $lock_type =~ s/D.*:(.*)/$1/g;
+            $lock_type =~ s/.*:(.*)/$1/g;
             $lock->set_type($lock_type);
          } 
    
-         # 3. RFC2518 allows only depth of 0,1,Infinity
+         # 3. RFC2518 allows only depth of 0,1,infinity
          elsif ( $lock_prop_name eq "depth" ) {
             my $lock_depth = HTTP::DAV::Utils::get_only_cdata($node_lock_param);
             $lock->set_depth($lock_depth);
@@ -187,7 +199,7 @@ sub XML_lockdiscovery_parse {
             $lock->set_owner( $node_lock_param->getFirstChild->toString );
          }
    
-         # 5. RFC2518 (Section 9.8) e.g. Timeout: Second-234234 or Timeout: Infinity
+         # 5. RFC2518 (Section 9.8) e.g. Timeout: Second-234234 or Timeout: infinity
          elsif ( $lock_prop_name eq "timeout" ) {
             my $lock_timeout = HTTP::DAV::Utils::get_only_cdata($node_lock_param);
             my $timeout = HTTP::DAV::Lock->interpret_timeout($lock_timeout);
@@ -248,12 +260,12 @@ sub get_supportedlock_details {
       next unless $lock_prop_name;
 
       # RFC2518 currently only allows lockscope of exclusive or shared
-      # <D:lockscope> <D:shared|write/>    </D:lockscope>
+      # <D:lockscope> <D:shared|exclusive/>    </D:lockscope>
       my $node_lockscope=HTTP::DAV::Utils::get_only_element($node_lockentry,"D:lockscope");
       if ( $node_lockscope ) {
          my $node_lockscope_param =HTTP::DAV::Utils::get_only_element($node_lockscope);
          my $lockscope = $node_lockscope_param->getNodeName;
-         $lockscope =~ s/D.*:(.*)/$1/g;
+         $lockscope =~ s/.*:(.*)/$1/g;
          $supportedlocks[$i]{ "scope" } = $lockscope;
       }
 
@@ -263,7 +275,7 @@ sub get_supportedlock_details {
       if ( $node_locktype ) {
          my $node_locktype_param =HTTP::DAV::Utils::get_only_element($node_locktype);
          my $locktype = $node_locktype_param->getNodeName;
-         $locktype =~ s/D.*:(.*)/$1/g;
+         $locktype =~ s/.*:(.*)/$1/g;
          $supportedlocks[$i]{ "type" } = $locktype;
       }
    }
@@ -290,7 +302,7 @@ Timeout at:
     For more time and date formats that are handled see HTTP::Date
 
 RFC2518 states that the timeout value MUST NOT be greater 
-than 2^32-1. If this occurs it will simply set the timeout to Infinity
+than 2^32-1. If this occurs it will simply set the timeout to infinity
 =cut
 
 sub timeout {
@@ -312,7 +324,7 @@ sub timeout {
 
    # Timeout value cannot be greater than 2^32-1 as per RFC2518
    if ( $timeoutret =~ /infinity/i || $timeoutret >= 4294967295 ) {
-      return "Infinity, Second-4294967295 ";
+      return "Infinite, Second-4294967295 ";
    } 
    elsif ( $timeoutret <= 0 ) {
       return 0;
@@ -381,21 +393,36 @@ Mainly useful for debugging purposes. It takes no arguments.
 
 sub as_string
 {
-   my ($self,$space,$depth) = @_;
+   my ($self,$space,$debug) = @_;
    my ($str) = "";
-   $depth = 1 if $depth eq "";
+   $space = "   " if !defined $space;
    $str .= "${space}Lock Object ($self)\n";
    $space  .= "   ";
-   $str .= "${space}'_owned':   $self->{_owned}\n";
-   $str .= "${space}'_scope':   $self->{_scope}\n";
-   $str .= "${space}'_type':    $self->{_type}\n";
-   $str .= "${space}'_owner':   $self->{_owner}\n";
-   $str .= "${space}'_depth':   $self->{_depth}\n";
-   $str .= "${space}'_timeout': $self->{_timeout}\n";
+   $str .= "${space}'_owned':   " . ($self->{_owned}||"") . "\n";
+   $str .= "${space}'_scope':   " . ($self->{_scope}||"") . "\n";
+   $str .= "${space}'_type':    " . ($self->{_type} ||"") . "\n";
+   $str .= "${space}'_owner':   " . ($self->{_owner}||"") . "\n";
+   $str .= "${space}'_depth':   " . ($self->{_depth}||"") . "\n";
+   $str .= "${space}'_timeout': " . ($self->{_timeout}||"") . "\n";
    $str .= "${space}'_locktokens': " . join(", ", @{$self->get_locktokens()} ) . "\n";
 
    $str;
 }
+
+sub pretty_print
+{
+   my ($self,$space) = @_;
+   my ($str) = "";
+   $str .= "${space}Owner:   $self->{_owner}\n";
+   $str .= "${space}Scope:   $self->{_scope}\n";
+   $str .= "${space}Type:    $self->{_type}\n";
+   $str .= "${space}Depth:   $self->{_depth}\n";
+   $str .= "${space}Timeout: $self->{_timeout}\n";
+   $str .= "${space}LockTokens: " . join(", ", @{$self->get_locktokens()} ) . "\n";
+
+   $str;
+}
+
 
 ###########################################################################
 =back

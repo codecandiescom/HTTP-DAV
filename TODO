@@ -1,19 +1,46 @@
-$Id: TODO,v 0.4 2001/07/24 15:55:23 pcollins Exp $
-
 TODO
-   - COPY and MOVE are not yet implemented
-   - DAV::Client?? A funky client to simplify all of the raw resource commands.
-   - DAV command line programs.
-   - Namespaces are not currently supported. I munge around them since
-     they are not supported in DOM1 which is what XML::DOM uses.
-   - testing against Zope
-   - Rework Response.pm now that LWP::Status supports the status codes.
 
-   - On the wishlist
-      - support for LWPng which is fully HTTP/1.1 compliant.
-      - DAV Bindings
-      - DAV Redirects Reference
-      - DAV Ordered collections
-      - DAV DASL support
-      - DAV Delta-V
-      - DAV ACL's
+  dave
+
+       - multistatus responses don't come through nicely.
+
+  DAV.pm
+
+       - redo POD for DAV.pm, Resource.pm
+       - dist prog to remove all login details
+
+       - setup_if_headers need to get just Rsource's locks not all RL's locks.
+       - discovery still isn't resetting locks properly ????
+       - DAV.pm as_string needs working resource
+       - finish lock (bug against mod_dav somewhere)
+
+       - mod t/* for IIS 5 lock and proppatch deficiencies.
+       - how to we handle degradation for incomplete servers in test suite (IIS)?
+
+  Wishlist functions
+
+       - try using LWP's Digest mechanism, https and http11.pm 
+       - testing against Zope
+       - dave:implement netrc?
+       - dave:tab completion? history?
+       - dave:implement more advanced command-line interaction
+       - dave:copy/move should allow the user to set 'depth' and 'overwrite'
+       - redo auth as a callback? If so, needs 2 functions, get and success.
+
+  Wishlist projects
+
+       - Namespaces are not currently supported. I munge around them since
+         they are not supported in DOM1 which is what XML::DOM uses.
+       - Rework Response.pm now that LWP::Status supports the status codes.
+
+       - support for LWPng which is fully HTTP/1.1 compliant.
+       - DAV Bindings
+       - DAV Redirects Reference
+       - DAV Ordered collections
+       - DAV DASL support
+       - DAV Delta-V
+       - DAV ACL's
+
+    ** This file was automatically generated from **
+    ** doc/Changes.pod. To edit it, see there.    **
+

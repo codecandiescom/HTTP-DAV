@@ -1,7 +1,7 @@
-# $Id: Utils.pm,v 0.4 2001/07/24 15:56:01 pcollins Exp $
+# $Id: Utils.pm,v 0.9 2001/08/27 17:12:43 pcollins Exp $
 package HTTP::DAV::Utils;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.9 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
@@ -192,14 +192,45 @@ sub get_only_element {
 
 ###########################################################################
 sub XML_remove_namespace {
+   #print "XML: $_[0] -> ";
    $_[0] =~ s/.*?:(.*)/$1/g;
+   #$_[0] =~ s/(.*?)\s.*/$1/g;
+   #print "$_[0]\n";
    return $_[0];
 }
 
 ###########################################################################
 sub make_uri {
    my $uri = shift;
-   return ( ref($uri) =~ /URI/ ) ? $uri : URI->new($uri);
+   if ( ref($uri) =~ /URI/ ) { 
+      $uri = $uri->as_string;
+   }
+   #$uri =~ "http://$uri" unless $uri=~ /^http:\/\//;
+   #if $uri = "" return URI->new();
+   # Remove double slashes from the url
+   $uri =URI->new($uri);
+   my $path =$uri->path;
+   $path =~ s#//#/#g;
+   #print "make_uri: $uri->$path\n";
+   $uri->path($path);
+   #print "make_uri: $uri\n";
+   return $uri;
+}
+
+sub make_trail_slash {
+   my ($uri) = @_;
+   $uri =~ s#/*$##g;
+   $uri.="/";
+   return $uri;
+}
+
+sub compare_uris {
+   my ($uri1,$uri2) = @_;
+   $uri1 = make_uri($uri1);
+   $uri2 = make_uri($uri2);
+   $uri1=~s#\/$##g;
+   $uri2=~s#\/$##g;
+   $uri1 eq $uri2;
 }
 
 1;

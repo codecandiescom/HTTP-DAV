@@ -1,7 +1,7 @@
-# $Id: ResourceList.pm,v 0.4 2001/07/24 15:56:01 pcollins Exp $
+# $Id: ResourceList.pm,v 0.10 2001/09/01 19:48:14 pcollins Exp $
 package HTTP::DAV::ResourceList;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.10 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
@@ -34,44 +34,83 @@ sub _init {
 ####
 # List Operators
 
+sub get_resources {
+   my ($self) =shift;
+
+   my $arr = $self->{_resources};
+   return (defined $arr ) ? @{$self->{_resources}} : ();
+}
+
+sub get_urls {
+   my ($self) =shift;
+   my @arr;
+   foreach my $r ( $self->get_resources() ) {
+      push( @arr, $r->get_uri() );
+   }
+   return @arr;
+}
+
+
 sub count_resources {
    return $#{$_[0]->{_resources}}+1;
 }
 
-sub add_resource {
-   my ($self,$resource) = @_;
-   $resource->set_parent_resourcelist($self);
-   push (@{$self->{_resources}}, $resource);
-}
+sub get_member {
+   my ($self,$uri) = @_;
+   $uri = HTTP::DAV::Utils::make_uri($uri);
 
-
-# Synopsis: $list->remove_resource( uri : String or URI);
-#        or $list->remove_resource( resource_obj : HTTP::DAV::Resource );
-sub remove_resource {
-   my ($self,$resource ) = @_;
-   my $uri;
-
-   if ( ref($resource) !~ /HTTP::DAV::Resource/ ) {
-      $uri = HTTP::DAV::Utils::make_uri($resource);
-      return 0 if (! $uri->scheme );
-   }
-   my $found_index = -1;
-   foreach my $i ( 0 .. $#{$self->{_resources}} ) {
-      my $this_resource = $self->{_resources}[$i];
-      if ( ( $uri && $uri->eq($this_resource->get_uri) )
-           || $resource eq $this_resource ) {
-         $found_index = $i;
-         last;
+   foreach my $r ( $self->get_resources ) {
+      if ( HTTP::DAV::Utils::compare_uris($uri,$r->get_uri) ) {
+         return $r;
       }
    }
 
-   if ( $found_index != -1 ) {
-      $resource = splice(@{$self->{_resources}},$found_index,1);
-      $resource->set_parent_resourcelist();
-      return $resource;
+   return 0;
+}
+
+sub add_resource {
+   my ($self,$resource) = @_;
+#   print "Adding $resource\n";
+#   print "Before: ". $self->as_string . "\n";
+   $self->remove_resource($resource);
+   $resource->set_parent_resourcelist($self);
+   push (@{$self->{_resources}}, $resource);
+#   print "After: ". $self->as_string . "\n";
+}
+
+
+# Synopsis: $list->remove_resource( resource_obj : HTTP::DAV::Resource );
+sub remove_resource {
+   my ($self,$resource ) = @_;
+   my $uri;
+   my $ret;
+
+   $uri = HTTP::DAV::Utils::make_uri($resource->get_uri);
+   if (defined $uri && $uri->scheme ) {
+      my $found_index = -1;
+      foreach my $i ( 0 .. $#{$self->{_resources}} ) {
+         my $this_resource = $self->{_resources}[$i];
+         my $equiv = HTTP::DAV::Utils::compare_uris($uri,$this_resource->get_uri);
+         if ( $equiv || $resource eq $this_resource ) {
+            $found_index = $i;
+            last;
+         }
+      }
+   
+      if ( $found_index != -1 ) {
+         $resource = splice(@{$self->{_resources}},$found_index,1);
+         $resource->set_parent_resourcelist();
+         $ret = $resource;
+      } else {
+         $ret = 0;
+      }
    } else {
-      return 0;
+      $ret = 0;
    }
+
+   #print "Removing $ret\n" if $HTTP::DAV::DEBUG>2;
+   return $ret;
+   
 }
 
 ###########################################################################
@@ -84,7 +123,10 @@ sub remove_resource {
 # );
 #
 sub get_locktokens {
-   my ($self,$uri) = @_;
+   my ($self,@p) = @_;
+   my($uri,$owned) = HTTP::DAV::Utils::rearrange(['URI','OWNED'],@p);
+   $owned = 0 unless defined $owned;
+
    my %tokens;
   
    my @uris;
@@ -105,19 +147,22 @@ sub get_locktokens {
    #    of the uri you specify, I'll tell you what the 
    #    locked resource tokens were
 
-   foreach my $resource ( @{$self->{_resources}} ) {
+   foreach my $resource ( $self->get_resources ) {
 
       my $resource_uri = $resource->get_uri;
-      foreach my $uri ( @uris ) {
+      foreach my $url ( @uris ) {
 
          # if $resource_uri is in $uri
          # e.g. u=/a  r=/a/b/e
          # e.g. u=/a  r=/a/b/c.txt
          my $r = $resource_uri->canonical();
-         my $u = $uri->canonical();
+         my $u = $url->canonical();
+         $r =~ s/\/*$/\//g; # Add a trailing slash
+         $u =~ s/\/*$/\//g; # Add a tailing slash
          if ($u =~ /\Q$r/ ) {
 
-            my @locks = $resource->get_locks();
+            my @locks = $resource->get_locks(-owned=>$owned);
+            #my $uri = $resource_uri->path();
             foreach my $lock (@locks) {
                my @lock_tokens = @{$lock->get_locktokens()};
                push(@{$tokens{$resource_uri}}, @lock_tokens);
@@ -146,11 +191,11 @@ sub tokens_to_if_header {
    my ($self, $tokens, $tagged) = @_;
    my $if_header;
    foreach my $uri (keys %$tokens ) {
-      $if_header .= "<$uri>" if $tagged;
+      $if_header .= "<$uri> " if $tagged;
       foreach my $token (@{$$tokens{$uri}}) {
-         $if_header .= "(<$token>)";
+         $if_header .= "(<$token>) ";
       }
-      #$if_header .= "\n";     
+      $if_header=~ s/\s+$//g;
    }
    return $if_header;
 }
@@ -158,15 +203,33 @@ sub tokens_to_if_header {
 ###########################################################################
 # Dump the objects contents as a string
 sub as_string {
-   my ($self,$space,$depth) = @_;
+   my ($self,$space,$depth,$verbose) = @_;
+   $verbose=1 if (!defined $verbose || $verbose!=0);
+   $space||="   ";
    my ($return) = "";
    $return .= "${space}ResourceList Object ($self)\n";
    $space  .= "   ";
-   foreach my $resource ( @{$self->{_resources}} ) {
-      $return .= $resource->as_string($space,$depth);
+   foreach my $resource ( $self->get_resources() ) {
+      if ($verbose) {
+         $return .= $resource->as_string($space,$depth);
+      } else {
+         $return .= $space . $resource . " " . $resource->get_uri. "\n";
+      }
    }
 
    $return;
 }
+
+sub showlocks {
+   my ($self,$space,$depth) = @_;
+   $space||="   ";
+   my ($return) = "";
+   foreach my $resource ( $self->get_resources() ) {
+      $return .= $resource->as_string("$space",2);
+   }
+   $return;
+}
+
+1;
 
 1;

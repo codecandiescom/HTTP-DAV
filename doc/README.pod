@@ -1,0 +1,227 @@
+$Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+
+=for html 
+<div id="content">
+<H1>PerlDAV -- A WebDAV client library for Perl5</H1>
+</div><div id="content">
+
+=begin text
+
+=head1 PerlDAV -- A WebDAV client library for Perl5
+
+=end text
+
+PerlDAV is a Perl library for modifying content on webservers using the WebDAV protocol. Now you can LOCK, DELETE and PUT files and much more on a DAV-enabled webserver. 
+
+The PerlDAV library consists of:
+
+=over 4
+
+=item * 
+
+B<HTTP::DAV> - an object-oriented Web-DAV client API.
+
+=item * 
+
+B<dave> - the DAV Explorer, an end-user Unix console program for interacting with WebDAV servers. dave looks and feels like a standard Unix ftp program.
+
+=back
+
+Learn more about WebDAV at http://www.webdav.org/
+
+=head1 LATEST VERSION AND WHAT'S NEW
+
+The latest version is: v0.22 (released 2001/09/03 19:39:28)
+
+Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+
+=head2 What's New:
+
+=over 4
+
+=item *
+
+B<dave -- the new command line client>
+
+I wrote dave (the DAV Explorer) because I needed an end-user application that allowed me to "feel" how well the HTTP::DAV API was performing. dave is quite similar to Joe Orton's C-based DAV client called cadaver (yes, imitation is the best form of flattery).
+
+=item *
+
+B<A new and simpler API>
+
+This new API is accessed directly through the HTTP::DAV module and is based on the core API written in previous releases. 
+
+
+=item * 
+
+B<new methods>
+
+The new API now supports, proppatch, recursive get, recursive put and steal locks.
+
+=item *
+
+B<A substantial core API overhaul>
+
+Moving from v0.05 to v0.22 in one release might indicate the amount of work gone into this release.
+
+=item *
+
+B<A new interoperability test suite>
+
+is now included in PerlDAV. The test suite is built on top of the standard Perl Test::Harness modules. Still in development, the test suite is highlighting interoperability problems with DAV-servers a lot quicker than before. See L<the test suite & interoperability> section.
+
+=back
+
+=for html
+<P>See the <A HREF="Changes.html">Changes file</A> for previous releases.</P>
+
+=for text
+See the Changes file for previous releases.
+
+=head1 INSTALLING PERLDAV
+
+The lazy way to install PerlDAV:
+
+   $ perl -MCPAN -e shell
+   cpan> install HTTP::DAV
+
+Or the normal way:
+
+Retrieve the latest copy from CPAN: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+
+   $ perl Makefile.PL # Creates the Makefile
+   $ make             # Runs the makefile
+   $ make test        # Optional (See Interopability below)
+   $ make install     # Installs dave and HTTP::DAV
+
+With this method you will first have to install the pre-requisites: LWP and XML::DOM, see L<what are the prerequisites?>.
+
+When you install PerlDAV, the HTTP::DAV library will be installed to your Perl library location (usually /usr/local/lib/perl5) 
+
+C<dave> will be installed to /usr/local/bin. This suits most people but you can modify this by using the INSTALLBIN flag:
+
+   $ perl Makefile.PL INSTALLBIN="/home/pcollins/bin"
+
+=head2 What Are The Prerequisites?
+
+=over 4
+
+=item * 
+
+LWP (Have not tested lower than v5.48) 
+
+=item * 
+
+XML::DOM (Have not tested lower than v1.26) 
+
+=item *
+
+Perl5 (Have not tested lower than v5.005) 
+
+=back
+
+To get the latest versions of these prerequisite modules you can simply type this at the command prompt:
+
+   $ perl -MCPAN -e shell
+   cpan> install LWP
+   cpan> install XML::DOM
+
+or if you just 'install HTTP::DAV' the lovely CPAN module should just magically install all of the prerequisites for you.
+
+=head2 What Systems Does It Work With?
+
+HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later).  I have not ported it to Windows but would like somebody to have a shot at it (shouldn't be too hard. Honest).
+
+=head1 WHERE ARE THE MANUALS?
+
+Once you've installed PerlDAV, you can type: 
+
+   $ perldoc HTTP::DAV
+   $ perldoc dave
+
+=for html
+<P>Or you can view them here:
+<A HREF="HTTP-DAV.html">HTTP::DAV</A>,
+<A HREF="dave.html">dave</A>.</P>
+
+=head1 GETTING HELP
+
+=head2 The perldav mailing list
+
+There is a mailing list for PerlDAV for use by Developers and Users.  Please see http://mailman.webdav.org/mailman/listinfo/perldav
+
+=head1 THE TEST SUITE & INTEROPERABILITY
+
+You will notice that the standard C<make test> command invokes a large set of test procedures, but most will be skipped.  This standard test is sufficient to give you a good indication that PerlDAV has installed properly.
+
+If you'd like to see how well PerlDAV performs against a particular DAV server then you should set the URL (and username,password) in the test suite t/TestDetails.pm. Then you can run C<make test> again and watch the test suite perform as many operations as the server supports. Please note that the test suite will perofrm well over 200 HTTP requests to your server. 
+
+I have tested PerlDAV against IIS5, mod_dav and the Xythos WFS.
+
+At the moment the test suite is still in development so will probably fail one or more tests. 
+
+The test suite is the best way to test interopability between PerlDAV and other servers. I'd really like help with testing PerlDAV's interoperability. So if one or more tests fail against your server please follow the following steps:
+
+=over 4
+
+=item *
+
+Determine which test is failing.
+
+=item *
+
+set DEBUG to on: edit the script and change HTTP::DAV::DebugLevel(0) to (3).
+
+=item *
+
+Delete previous server output: rm /tmp/perldav_debug.txt
+
+=item *
+
+Run that single test again: 
+
+$make test TEST_FILES=t/thetest.t TEST_VERBOSE=1 > testoutput.log
+
+=item *
+
+Then gzip and mail me both testoutput.log and /tmp/perldav_debug.txt with details of the test environment. (My email is at the bottom)
+
+=back
+
+Alternatively, you could have a shot at solving the bug yourself :)
+
+=head1 BUGS and TODO
+
+The test suite isn't fully finished yet.
+
+=for html
+<P>See <A HREF="TODO.html">TODO</A> for what is left to be done.</P>
+
+=for text
+See TODO for what is left to be done.
+
+=head1 AUTHOR AND COPYRIGHT
+
+This module is Copyright (C) 2001 by
+
+   Patrick Collins
+   G03 Gloucester Place, Kensington
+   Sydney, Australia
+
+   mailto:pcollins@cpan.org
+   Phone: +61 2 9663 4916
+
+All rights reserved.
+
+You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
+
+$Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+
+=cut
+
+=for text
+** This file was automatically generated from **
+** doc/Changes.pod. To edit it, see there.    **
+
+=for html
+</div>

@@ -1,4 +1,4 @@
-# $Id: Comms.pm,v 0.5 2001/07/24 15:56:00 pcollins Exp $
+# $Id: Comms.pm,v 0.16 2001/09/02 08:46:36 pcollins Exp $
 package HTTP::DAV::Comms;
 
 use HTTP::DAV::Utils;
@@ -6,7 +6,7 @@ use HTTP::DAV::Response;
 use LWP;
 use URI;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.5 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.16 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION $DEBUG);
@@ -25,19 +25,23 @@ sub new {
 # and some default headers, like, the user agent
 sub _init {
    my ($self,@p) = @_;
-
-   my ($headers,$agent) = HTTP::DAV::Utils::rearrange( ['HEADERS', 'AGENT'], @p);
+   my ($headers,$useragent) = HTTP::DAV::Utils::rearrange( ['HEADERS','USERAGENT'], @p);
 
    # This is cached in this object here so that each http request 
    # doesn't have to invoke a new useragent.
-   $self->init_ua();
+   $self->init_user_agent($useragent);
 
    $self->set_headers($headers);
-   $self->set_agent($agent);
 }
 
-sub init_ua {
-   $_[0]->{_ua} = HTTP::DAV::RequestAgent->new;
+sub init_user_agent {
+    my($self,$useragent) = @_;
+    if ( defined $useragent ) {
+       $self->{_user_agent} = $useragent;
+    } else {
+       $self->{_user_agent} = HTTP::DAV::UserAgent->new;
+       $self->set_agent("DAV.pm/v$HTTP::DAV::VERSION");
+    }
 }
 
 ####
@@ -46,11 +50,7 @@ sub init_ua {
 # Sets a User-Agent as specified by user or as the default
 sub set_agent { 
    my ($self, $agent) = @_;
-   $self->init_ua() unless defined $self->{_ua};
-
-   $agent = "DAV.pm/$HTTP::DAV::VERSION" unless $agent;
-
-   $self->{_ua}->agent($agent);
+   $self->{_user_agent}->agent($agent);
 }
 
 sub set_header {
@@ -60,6 +60,7 @@ sub set_header {
 }
 
 
+sub get_user_agent { $_[0]->{_user_agent}; }
 sub get_headers { $_[0]->{_headers}; }
 sub set_headers {
    my ($self,$headers) = @_;
@@ -72,6 +73,15 @@ sub set_headers {
 
    $self->{_headers} = $headers;
 }
+
+sub _set_last_request  { $_[0]->{_last_request}  = $_[1]; }
+sub _set_last_response { $_[0]->{_last_response} = $_[1]; }
+
+# Returns an HTTP::Request object
+sub get_last_request  { $_[0]->{_last_request};  }
+
+# Returns an HTTP::DAV::Response object
+sub get_last_response { $_[0]->{_last_response}; }
 
 ####
 # Ensure there is a Host: header based on the URL
@@ -96,7 +106,7 @@ sub do_http_request {
 
    # If you see user:pass detail embedded in the URL. Then get it out.
    if ( $url_obj->userinfo ) {
-      $self->{_ua}->credentials($url,undef, split(':',$url_obj->userinfo) );
+      $self->{_user_agent}->credentials($url,undef, split(':',$url_obj->userinfo) );
    }
 
    # Header management
@@ -109,17 +119,22 @@ sub do_http_request {
    $headers->add_headers( $self->{_headers} );
    $headers->add_headers( $newheaders );
 
-   $headers->header("Host", $url_obj->host);
+   $headers->header("Host", $url_obj->host_port);
+   #$headers->header("Authorization", "Basic cGNvbGxpbnM6dGVzdDEyMw==");
+   #$headers->header("Connection", "TE");
+   #$headers->header("TE", "trailers");
 
+   my $length = ($content) ? length($content) : 0;
+   $headers->header("Content-Length", $length);
    #print "HTTP HEADERS\n" . $self->get_headers->as_string . "\n\n";
+
 
    # It would be good if, at this stage, we could prefill the 
    # username and password values to prevent the client having 
    # to submit 2 requests, submit->401, submit->200
    # This is the same kind of username, password remembering 
    # functionality that a browser performs.
-   #@userpass = $self->{_ua}->get_basic_credentials(undef, $url);
-   #print "HEY THERE!! @userpass\n";
+   #@userpass = $self->{_user_agent}->get_basic_credentials(undef, $url);
 
    # Add a Content-type of text/xml if the body has <?xml in it
    if ( $content && $content =~ /<\?xml/i ) {
@@ -137,10 +152,33 @@ sub do_http_request {
    # It really bugs me, but libwww-perl doesn't honour this call.
    # I'll leave it here anyway for future compatibility.
    $req->protocol("HTTP/1.1");
+   my $resp = $self->{_user_agent}->request($req);
 
-   print "$method REQUEST>>\n" . $req->as_string() if $HTTP::DAV::DEBUG > 1;
-   my $resp = $self->{_ua}->request($req);
-   print "$method RESPONSE>>\n" . $resp->as_string() if $HTTP::DAV::DEBUG > 1;     
+   if ( $HTTP::DAV::DEBUG > 1 ) {
+      no warnings;
+      #open(DEBUG, ">&STDOUT") || die ("Can't open STDERR");;
+      open(DEBUG, ">>/tmp/perldav_debug.txt");
+      print DEBUG "\n" . "-"x70 . "\n";
+      print DEBUG localtime() . "\n";
+      print DEBUG "$method REQUEST>>\n" . $req->as_string();
+
+      if ( $resp->headers->header('Content-Type') =~ /xml/ ) {
+         my $body = $resp->as_string();
+         #$body =~ s/>\n*/>\n/g;
+         print DEBUG "$method XML RESPONSE>>$body\n";
+      #} elsif ( $resp->headers->header('Content-Type') =~ /text.html/ ) {
+         #require HTML::TreeBuilder;
+         #require HTML::FormatText;
+         #my $tree = HTML::TreeBuilder->new->parse($resp->content());
+         #my $formatter = HTML::FormatText->new(leftmargin => 0);
+         #print DEBUG "$method RESPONSE (HTML)>>\n" . $resp->headers->as_string();
+         #print DEBUG $formatter->format($tree);
+      } else {
+
+         print DEBUG "$method RESPONSE>>\n" . $resp->as_string();
+      }
+      close DEBUG;
+   }
 
    ####
    # Copy the HTTP:Response into a HTTP::DAV::Response. It specifically 
@@ -149,28 +187,36 @@ sub do_http_request {
    my $dav_resp = HTTP::DAV::Response->clone_http_resp($resp);
    $dav_resp->set_message( $resp->code );
 
+   #### 
+   # Save the req and resp objects as the "last used"
+   $self->_set_last_request ($req);
+   $self->_set_last_response($dav_resp);
+
    return $dav_resp;
 }
 
 sub credentials {
-   my($self, $user, $pass, $netloc, $realm) = @_;
-   $self->{_ua}->credentials($netloc,$realm,$user,$pass);
+   my($self, @p) = @_;
+   my ($user,$pass,$url,$realm) = HTTP::DAV::Utils::rearrange( ['USER', 'PASS','URL','REALM'], @p);
+   $self->{_user_agent}->credentials($url,$realm,$user,$pass);
 }
 
 ###########################################################################
 # We make our own specialization of LWP::UserAgent 
-# called HTTP::DAV::RequestAgent.
+# called HTTP::DAV::UserAgent.
 # The variations allow us to have various levels of protection.
 # Where the user hasn't specified what Realm to use we pass the 
 # userpass combo to all realms of that host
+# Also this UserAgent remembers a user on the next request.
+# The standard UserAgent doesn't. 
 {
-    package HTTP::DAV::RequestAgent;
+    package HTTP::DAV::UserAgent;
 
     use strict;
     use vars qw(@ISA);
 
     @ISA = qw(LWP::UserAgent);
-    require LWP::UserAgent;
+    #require LWP::UserAgent;
 
     sub new
     {
@@ -182,37 +228,37 @@ sub credentials {
     sub credentials {
        my($self, $netloc, $realm,$user,$pass) = @_;
        $realm = "default" unless $realm;
-       my ($uri, $host_port) = "";
-       if ($netloc){
-          $uri = URI->new($netloc);
-          $host_port = $uri->host_port;
+       if ($netloc) {
+          $netloc = "http://$netloc" unless $netloc=~/^http/;
+          my $uri = URI->new($netloc);
+          $netloc = $uri->host_port;
        } else {
-          $host_port = "default";
+          $netloc = "default";
        }
-       #print "Setting auth details for $host_port, $realm to $user,$pass\n" if $HTTP::DAV::DEBUG > 1;
-       @{ $self->{'basic_authentication'}{$host_port}{$realm}}= ($user, $pass);
+       { no warnings; 
+       print "Setting auth details for $netloc, $realm to $user,$pass\n" if $HTTP::DAV::DEBUG > 2;
+       }
+       @{ $self->{'basic_authentication'}{$netloc}{$realm}}= ($user, $pass);
     }
 
     sub get_basic_credentials
     {
         my($self, $realm, $uri) = @_;
-        my $netloc;
-        if ( ref($uri) =~ /URI/ ) {
-           $netloc = $uri->host_port;
-        } elsif ( $uri=~ /^http/ ) { 
-           $uri = URI->new($uri);
-           $netloc = $uri->host_port;
-        }
 
-        #print "Looking for user details at $netloc, realm $realm\n";
-        #print Data::Dumper->Dump( [$self] , [ '$self' ] );    
-        my $userpass= 
-           $self->{'basic_authentication'}{$netloc}{$realm} ||
+        $uri = HTTP::DAV::Utils::make_uri($uri);
+        my $netloc = $uri->host_port;
+
+        my $userpass;
+        {
+        no warnings; # SHUTUP with your silly warnings.
+        $userpass=
+           $self->{'basic_authentication'}{$netloc}{$realm}  ||
            $self->{'basic_authentication'}{$netloc}{default} ||
-           #$self->{'basic_authentication'}{default}{default} ||
            [];
 
-        print "Userpass: @$userpass\n" if $HTTP::DAV::DEBUG > 1;
+        print "Using user/pass combo: @$userpass. For $realm, $uri\n" if $HTTP::DAV::DEBUG > 2;
+
+        }
         return @$userpass;
     }
 }
@@ -253,10 +299,6 @@ sub credentials {
       #print Data::Dumper->Dump( [$headers] , [ '$headers' ] );    
       foreach my $key ( sort keys %$headers ) {
          $self->header( $key, $headers->{$key} );
-         #print "HEADER: $key, $headers->{$key}\n";
-         #return 0 unless $key;
-         #delete $self->{$key};
-         #return [ $key, $val ];
       }
    }
 }

@@ -1,116 +1,183 @@
-$Id: README,v 0.4 2001/07/24 17:14:50 pcollins Exp $
-HTTP::DAV - A WebDAV client library for Perl5
+PerlDAV -- A WebDAV client library for Perl5
+    PerlDAV is a Perl library for modifying content on webservers using the
+    WebDAV protocol. Now you can LOCK, DELETE and PUT files and much more on
+    a DAV-enabled webserver.
 
-WHAT IS IT?
-   This is HTTP::DAV (a.k.a PerlDAV), a Perl5 library for interacting
-   and modifying content on webservers using the WebDAV protocol. Now
-   you can LOCK, DELETE and PUT files and much more on a DAV-enabled
-   webserver. Learn more about WebDAV at http://www.webdav.org/
+    The PerlDAV library consists of:
 
-WARNING
-   This is alpha software. 
-   It does function but please be careful not to use it in production.
-   Please help to finish PerlDAV. There is a TODO list at the bottom of
-   this file.
+    *   HTTP::DAV - an object-oriented Web-DAV client API.
 
-AN EXAMPLE SCRIPT
-   use HTTP::DAV;
+    *   dave - the DAV Explorer, an end-user Unix console program for
+        interacting with WebDAV servers. dave looks and feels like a
+        standard Unix ftp program.
 
-   $dav = HTTP::DAV->new;
-   $dav->credentials( "pcollins", "mypass", "http://localhost/" );
-   $resource = $dav->new_resource( -uri => "http://localhost/dav/myfile.txt" );
- 
-   $response = $resource->lock;
-   $response = $resource->put("New file contents\n");
-   print "BAD PUT\n" unless $response->is_success;
-   $response = $resource->unlock;
-   
-   $resource->propfind;
-   print "BAD PROPFIND\n" unless $response->is_success;
-   $getlastmodified = $resource->get_property( "getlastmodified" );
-   print "Last modified $getlastmodified\n";
+    Learn more about WebDAV at http://www.webdav.org/
 
-HOW DO I INSTALL IT?
+LATEST VERSION AND WHAT'S NEW
+    The latest version is: v0.22 (released 2001/09/03 19:39:28)
 
-   The lazy way:
-      $ perl -MCPAN -e shell
-      cpan> install HTTP::DAV
-   
-   or the manual way:
-      Retrieve the latest copy from CPAN: 
-      http://www.cpan.org/authors/id/P/PC/PCOLLINS/
-      $ perl Makefile.PL
-      $ make
-      $ make test
-      $ make install
+    Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+
+  What's New:
+
+    *   dave -- the new command line client
+
+        I wrote dave (the DAV Explorer) because I needed an end-user
+        application that allowed me to "feel" how well the HTTP::DAV API was
+        performing. dave is quite similar to Joe Orton's C-based DAV client
+        called cadaver (yes, imitation is the best form of flattery).
+
+    *   A new and simpler API
+
+        This new API is accessed directly through the HTTP::DAV module and
+        is based on the core API written in previous releases.
+
+    *   new methods
+
+        The new API now supports, proppatch, recursive get, recursive put
+        and steal locks.
+
+    *   A substantial core API overhaul
+
+        Moving from v0.05 to v0.22 in one release might indicate the amount
+        of work gone into this release.
+
+    *   A new interoperability test suite
+
+        is now included in PerlDAV. The test suite is built on top of the
+        standard Perl Test::Harness modules. Still in development, the test
+        suite is highlighting interoperability problems with DAV-servers a
+        lot quicker than before. See the the test suite & interoperability
+        entry elsewhere in this document section.
+
+    See the Changes file for previous releases.
+
+INSTALLING PERLDAV
+    The lazy way to install PerlDAV:
+
+       $ perl -MCPAN -e shell
+       cpan> install HTTP::DAV
+
+    Or the normal way:
+
+    Retrieve the latest copy from CPAN:
+    http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+
+       $ perl Makefile.PL # Creates the Makefile
+       $ make             # Runs the makefile
+       $ make test        # Optional (See Interopability below)
+       $ make install     # Installs dave and HTTP::DAV
+
+    With this method you will first have to install the pre-requisites: LWP
+    and XML::DOM, see the what are the prerequisites? entry elsewhere in
+    this document.
+
+    When you install PerlDAV, the HTTP::DAV library will be installed to
+    your Perl library location (usually /usr/local/lib/perl5)
+
+    `dave' will be installed to /usr/local/bin. This suits most people but
+    you can modify this by using the INSTALLBIN flag:
+
+       $ perl Makefile.PL INSTALLBIN="/home/pcollins/bin"
+
+  What Are The Prerequisites?
+
+    *   LWP (Have not tested lower than v5.48)
+
+    *   XML::DOM (Have not tested lower than v1.26)
+
+    *   Perl5 (Have not tested lower than v5.005)
+
+    To get the latest versions of these prerequisite modules you can simply
+    type this at the command prompt:
+
+       $ perl -MCPAN -e shell
+       cpan> install LWP
+       cpan> install XML::DOM
+
+    or if you just 'install HTTP::DAV' the lovely CPAN module should just
+    magically install all of the prerequisites for you.
+
+  What Systems Does It Work With?
+
+    HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later). I
+    have not ported it to Windows but would like somebody to have a shot at
+    it (shouldn't be too hard. Honest).
 
 WHERE ARE THE MANUALS?
-   Once you've installed HTTP::DAV, you can type: 
-   $ perldoc HTTP::DAV
-   $ perldoc HTTP::DAV::Resource
+    Once you've installed PerlDAV, you can type:
+
+       $ perldoc HTTP::DAV
+       $ perldoc dave
 
 GETTING HELP
+  The perldav mailing list
 
-   The perldav mailing list
-   There is a mailing list for PerlDAV for use by Developers and Users.
-   Please see http://mailman.webdav.org/mailman/listinfo/perldav
+    There is a mailing list for PerlDAV for use by Developers and Users.
+    Please see http://mailman.webdav.org/mailman/listinfo/perldav
 
-WHAT ARE THE PREREQUISITES?
+THE TEST SUITE & INTEROPERABILITY
+    You will notice that the standard `make test' command invokes a large
+    set of test procedures, but most will be skipped. This standard test is
+    sufficient to give you a good indication that PerlDAV has installed
+    properly.
 
-   - LWP (Have not tested lower than v5.48) 
-   - XML::DOM (Have not tested lower than v1.26) 
-   - Perl (Have not tested lower than v5.005) 
+    If you'd like to see how well PerlDAV performs against a particular DAV
+    server then you should set the URL (and username,password) in the test
+    suite t/TestDetails.pm. Then you can run `make test' again and watch the
+    test suite perform as many operations as the server supports. Please
+    note that the test suite will perofrm well over 200 HTTP requests to
+    your server.
 
-   To get the latest versions of these prerequisite modules you can
-   simply type this at the command prompt:
+    I have tested PerlDAV against IIS5, mod_dav and the Xythos WFS.
 
-   $ perl -MCPAN -e shell
-   cpan> install LWP
-   cpan> install XML::DOM
+    At the moment the test suite is still in development so will probably
+    fail one or more tests.
 
-   or if you just 'install HTTP::DAV' the lovely CPAN module 
-   should just magically install all of the prerequisites for you.
+    The test suite is the best way to test interopability between PerlDAV
+    and other servers. I'd really like help with testing PerlDAV's
+    interoperability. So if one or more tests fail against your server
+    please follow the following steps:
 
-WHAT SYSTEMS DOES IT WORK WITH?
+    *   Determine which test is failing.
 
-   At the moment, this module is still in development, and as such I 
-   haven't had the time to test it on anything other than Linux. But
-   given that it is all pure Perl and no .xs or C-code it should be
-   fairly portable. I have had few complaints about interop issues.
+    *   set DEBUG to on: edit the script and change HTTP::DAV::DebugLevel(0)
+        to (3).
 
-BUGS
-   Locking is getting better but probably still has bugs.
-   The Response.pm module needs considerable work to allow access 
-   to the multistatus responses.
+    *   Delete previous server output: rm /tmp/perldav_debug.txt
 
-REVISION HISTORY
+    *   Run that single test again:
 
-   v0.05: General bug fixes and addition of proppatch
-   
-    - added PROPPATCH method to HTTP::DAV::Resource, thanks to Sylvain Plancon.
-    - fixed uninitialized warnings in test scripts.
-    - fixed new lock bug in DAV::Lock, thanks to Ben Evans
-    - fixed dumb mistake where PUT was calling get instead of put, 
-      thanks to Sylvain and Ben again.
-    - fixed call to Utils::bad, thanks to Sylvain
-   
-   v0.04: Initial Release
-    - supports PUT,GET,MLCOL,DELETE,OPTIONS,PROPFIND,LOCK,UNLOCK,
-      steal_lock,lock_discovery
-   
+        $make test TEST_FILES=t/thetest.t TEST_VERBOSE=1 > testoutput.log
+
+    *   Then gzip and mail me both testoutput.log and /tmp/perldav_debug.txt
+        with details of the test environment. (My email is at the bottom)
+
+    Alternatively, you could have a shot at solving the bug yourself :)
+
+BUGS and TODO
+    The test suite isn't fully finished yet.
+
+    See TODO for what is left to be done.
+
 AUTHOR AND COPYRIGHT
-
-   This module is Copyright (C) 2001 by
+    This module is Copyright (C) 2001 by
 
        Patrick Collins
        G03 Gloucester Place, Kensington
        Sydney, Australia
 
-       Email: pcollins@cpan.org
+       mailto:pcollins@cpan.org
        Phone: +61 2 9663 4916
 
-   All rights reserved.
+    All rights reserved.
 
-   You may distribute this module under the terms of either the GNU General
-   Public License or the Artistic License, as specified in the Perl README
-   file.
+    You may distribute this module under the terms of either the GNU General
+    Public License or the Artistic License, as specified in the Perl README
+    file.
+
+    $Id: README.pod,v 1.4 2001/09/03 20:13:13 pcollins Exp $
+
+    ** This file was automatically generated from **
+    ** doc/Changes.pod. To edit it, see there.    **
+
