@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# $Id: dist,v 1.8 2001/09/07 17:23:53 pcollins Exp $
+# $Id: dist,v 1.9 2001/10/30 16:45:49 pcollins Exp $
 
-URL="http://fastdev2:8080/perldav"
+URL="http://www.webdav.org/perldav"
 HTML="doc/html"
 
 echo "Updating \"The latest version is: ...\" string in doc/README.pod"

@@ -1,4 +1,4 @@
-# $Id: TestDetails.pm.empty,v 1.3 2001/10/30 16:26:18 pcollins Exp $
+# $Id: TestDetails.pm.empty,v 1.4 2001/10/30 16:46:05 pcollins Exp $
 package TestDetails;
 use strict;
 use Test;
@@ -22,7 +22,7 @@ use vars qw(@EXPORT @EXPORT_OK $VERSION @ISA);
 # But, if you haven't specified any details in the hash below 
 # specific for PROPFIND it will use the DEFAULT entries instead.
 
-$VERSION = sprintf("%d.%02d", q$Revision: 1.3 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 1.4 $ =~ /(\d+)\.(\d+)/);
 
 # Configure these details:
 

@@ -1,5 +1,25 @@
 Revision history for PerlDAV
 
+  v0.31 (released 2002/04/13):
+
+    *   Apache 2 mod_dav support
+
+         - Now works with mod_dav under Apache 2.
+
+    *   bug fixes
+
+         - Fixed bug to correctly handle the put/get of filenames with spaces in them.
+
+         - Fixed bug to allow the PUT of empty files.
+
+         - put() now uses binmode so that it works under Windows.
+
+         - HTTP redirect code added in the previous release was incorrectly returning a HTTP::Response instead of a HTTP::DAV::Response
+
+         - Fixed bug to allow https for copy and move (http:// was hardcoded).
+
+         - Fixed strange copy/move bug for Apache2.0's mod_dav.
+
   v0.29 (released 2001/10/31):
 
     *   https

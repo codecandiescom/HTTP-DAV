@@ -14,40 +14,31 @@ PerlDAV -- A WebDAV client library for Perl5
     Learn more about WebDAV at http://www.webdav.org/
 
 LATEST VERSION AND WHAT'S NEW
-    The latest version is: v0.29 (released 2001/10/30 15:47:10)
+    The latest version is: v0.31 (released 2002/04/13 12:21:07)
 
     Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
-  What's new
+    *   Windows support
 
-    *   https
+         - Multiple people have confirmed that PerlDAV install and runs under Windows (subject to fixing the binmode bug below).
 
-        https support as provided from the underlying LWP library has been
-        tested against mod_dav and mod_ssl. Seems to work well. See
-        INSTALLATION for more detail.
+    *   Apache 2 mod_dav support
 
-    *   Digest authentication
+         - Now works with mod_dav under Apache 2.
 
-        Requires MD5 to be installed. See INSTALLATION notes.
+    *   bug fixes
 
-    *   various bug fixes
+         - Fixed bug to correctly handle the put/get of filenames with spaces in them.
 
-    *   more powerful callback support for get()
+         - Fixed bug to allow the PUT of empty files.
 
-        Useful for giving progress indicators.
+         - put() now uses binmode so that it works under Windows.
 
-    *   get() to filehandles and scalar references
+         - HTTP redirect code added in the previous release was incorrectly returning a HTTP::Response instead of a HTTP::DAV::Response
 
-        the get() routine now allows you to pass by reference a filehandle
-        or scalar in which to save the contents of the GET request.
+         - Fixed bug to allow https for copy and move (http:// was hardcoded).
 
-    *   added namespace abbreviations in proppatch
-
-        Thanks to Jeremy for this patch.
-
-    *   improved redirect handling in Comms.pm
-
-        Thanks to Jeremy for this patch.
+         - Fixed strange copy/move bug for Apache2.0's mod_dav.
 
     See the Changes file for previous releases.
 
@@ -74,7 +65,7 @@ INSTALLING PERLDAV
     When you install PerlDAV, the HTTP::DAV library will be installed to
     your Perl library location (usually /usr/local/lib/perl5)
 
-    "dave" will be installed to /usr/local/bin. This suits most people but
+    `dave' will be installed to /usr/local/bin. This suits most people but
     you can modify this by using the INSTALLBIN flag:
 
        $ perl Makefile.PL INSTALLBIN="/home/pcollins/bin"
@@ -113,9 +104,9 @@ INSTALLING PERLDAV
 
   What Systems Does It Work With?
 
-    HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later). I
-    have not ported it to Windows but would like somebody to have a shot at
-    it (shouldn't be too hard. Honest).
+    HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later).
+    PerlDAV is known to run under Windows (although I haven't tried it
+    myself) and should run under all Unix systems.
 
 WHERE ARE THE MANUALS?
     Once you've installed PerlDAV, you can type:
@@ -130,22 +121,21 @@ GETTING HELP
     Please see http://mailman.webdav.org/mailman/listinfo/perldav
 
 THE TEST SUITE & INTEROPERABILITY
-    You will notice that the standard "make test" command invokes a large
+    You will notice that the standard `make test' command invokes a large
     set of test procedures, but most will be skipped. This standard test is
     sufficient to give you a good indication that PerlDAV has installed
     properly.
 
     If you'd like to see how well PerlDAV performs against a particular DAV
     server then you should set the URL (and username,password) in the test
-    suite t/TestDetails.pm. Then you can run "make test" again and watch the
+    suite t/TestDetails.pm. Then you can run `make test' again and watch the
     test suite perform as many operations as the server supports. Please
     note that the test suite will perofrm well over 200 HTTP requests to
     your server.
 
     I have tested PerlDAV against IIS5, mod_dav and the Xythos WFS.
 
-    At the moment the test suite is still in development so will probably
-    fail one or more tests.
+    Out of the box, the test suite should NOT fail on any tests.
 
     The test suite is the best way to test interopability between PerlDAV
     and other servers. I'd really like help with testing PerlDAV's
@@ -169,7 +159,8 @@ THE TEST SUITE & INTEROPERABILITY
     Alternatively, you could have a shot at solving the bug yourself :)
 
 BUGS and TODO
-    The test suite isn't fully finished yet.
+    Need to convert XML::DOM to a DOM Level 2 compliant parser like
+    XML::Gdome.
 
     See TODO for what is left to be done.
 
@@ -189,7 +180,7 @@ AUTHOR AND COPYRIGHT
     Public License or the Artistic License, as specified in the Perl README
     file.
 
-    $Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
+    $Id: README.pod,v 1.9 2002/04/13 12:20:37 pcollins Exp $
 
     ** This file was automatically generated from **
     ** doc/Changes.pod. To edit it, see there.    **

@@ -1,4 +1,4 @@
-# $Id: Resource.pm,v 0.28 2001/10/30 15:47:57 pcollins Exp $
+# $Id: Resource.pm,v 0.29 2002/04/06 17:45:42 pcollins Exp $
 package HTTP::DAV::Resource;
 
 use HTTP::DAV;
@@ -8,7 +8,7 @@ use HTTP::Date qw(str2time);
 use HTTP::DAV::ResourceList;
 use URI::Escape;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.28 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.29 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION); 
@@ -484,6 +484,7 @@ sub get {
    my($save_to,$progress_callback,$chunk) = 
       HTTP::DAV::Utils::rearrange(['SAVE_TO','PROGRESS_CALLBACK','CHUNK'],@p);
 
+   #$save_to = URI::Escape::uri_unescape($save_to);
    my $resp = $self->{_comms}->do_http_request ( 
       -method => "GET", 
       -uri    =>  $self->get_uri,
@@ -513,13 +514,13 @@ sub put {
    my $headers = HTTP::DAV::Headers->new();
    $self->_setup_if_headers($headers);
 
-   if ( ! $content ) {
+   if ( ! defined $content ) {
       $content = $self->get_content();
-      if ( ! $content ) {
-         #$resp = HTTP::DAV::Response->new;
-         #$resp->code("400"); ??
-         return $resp;
-      }
+      # if ( ! $content ) {
+      #    #$resp = HTTP::DAV::Response->new;
+      #    #$resp->code("400"); ??
+      #    return $resp;
+      # }
    }
 
    $resp = $self->{_comms}->do_http_request ( 
@@ -645,22 +646,30 @@ sub _move_copy {
    # Destination Resource must have a URL
    my $dest_url = $dest_resource->get_uri;
    my $server_type = $self->{_comms}->get_server_type( $dest_url->host_port() );
+   my $dest_str = $dest_url->as_string;
 
-   # We workaround
+   # Apache, Bad Gateway workaround
    if ( $server_type =~ /Apache/i && $server_type =~ /DAV\//i ) {
-      my $dest_str = "http://" . $dest_url->host_port . $dest_url->path; 
+      #my $dest_str = "http://" . $dest_url->host_port . $dest_url->path; 
+      $dest_str = $dest_url->scheme . "://". $dest_url->host_port . $dest_url->path; 
 
       if ($HTTP::DAV::DEBUG) {
          print "*** INSTIGATING mod_dav WORKAROUND FOR DESTINATION HEADER BUG IN Resource::_move_copy\n";
          print "*** Server type of " . $dest_url->host_port() . ": $server_type\n";
-         print "*** Setting Destination: header to $dest_str\n";
-         print "*** instead of $dest_url\n";
+         print "*** Adding port number :" . $dest_url->port . " to given url: $dest_url\n";
       }
 
-      $headers->header("Destination", $dest_str);
-   } else {
-      $headers->header("Destination", $dest_url->as_string);
+   } 
+
+   # Apache2 mod_dav, Permenantly Moved workaround
+   # If the src is a collection, then the dest must have a trailing 
+   # slash or mod_dav2 gives a strange "bad url" error in a 
+   # "Moved Permenantly" response.
+   if ( $self->is_collection || $self->get_uri =~ /\/$/ ) {
+      $dest_str =~ s#/*$#/#;
    }
+
+   $headers->header("Destination", $dest_str);
 
    # Join both the If headers together.
    $self         ->_setup_if_headers($headers,1);

@@ -1,4 +1,4 @@
-# $Id: Comms.pm,v 0.20 2001/10/30 15:47:57 pcollins Exp $
+# $Id: Comms.pm,v 0.21 2002/04/06 17:45:42 pcollins Exp $
 package HTTP::DAV::Comms;
 
 use HTTP::DAV::Utils;
@@ -6,7 +6,7 @@ use HTTP::DAV::Response;
 use LWP;
 use URI;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.20 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.21 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION $DEBUG);
@@ -198,41 +198,46 @@ sub do_http_request {
    my $code = $resp->code;
    if ($code == &HTTP::Status::RC_MOVED_PERMANENTLY or
    $code == &HTTP::Status::RC_MOVED_TEMPORARILY) {
-
-     # And then we update the URL based on the Location:-header.
-     my($referral_uri) = $resp->header('Location');
-     {
-         # Some servers erroneously return a relative URL for redirects,
-         # so make it absolute if it not already is.
-         local $URI::ABS_ALLOW_RELATIVE_SCHEME = 1;
-         my $base = $resp->base;
-         $referral_uri = $HTTP::URI_CLASS->new($referral_uri, $base)
-                   ->abs($base);
-     }
-
-     # Check for loop in the redirects
-     my $count = 0;
-     my $r = $resp;
-     while ($r) {
-         if (++$count > 13 ||
-                   $r->request->url->as_string eq $referral_uri->as_string) {
-       $resp->header("Client-Warning" =>
-             "Redirect loop detected");
-       return $resp;
-         }
-         $r = $r->previous;
-     }
-     return $self->do_http_request (
-            -method  => $method,
-            -url     => $referral_uri,
-            -headers => $newheaders,
-            -content => $content,
-            -saveto => $save_to,
-            -callback => $callback_func,
-            -chunk => $chunk,
-    );
-  }
-  # }}}
+ 
+      # And then we update the URL based on the Location:-header.
+      my($referral_uri) = $resp->header('Location');
+      {
+          # Some servers erroneously return a relative URL for redirects,
+          # so make it absolute if it not already is.
+          local $URI::ABS_ALLOW_RELATIVE_SCHEME = 1;
+          my $base = $resp->base;
+          $referral_uri = $HTTP::URI_CLASS->new($referral_uri, $base)
+                    ->abs($base);
+      }
+ 
+      # Check for loop in the redirects
+      my $count = 0;
+      my $r = $resp;
+      my $bad_loop=0;
+      while ($r) {
+          if (++$count > 13 || $r->request->url->as_string eq $referral_uri->as_string) {
+              $resp->header("Client-Warning" => "Redirect loop detected");
+              #if ( $HTTP::DAV::DEBUG ) {
+              #   print "*** CLIENT AND SERVER STUCK IN REDIRECT LOOP OR MOVED PERMENANTLY. $count. BREAKING ***\n";
+              #   print "***    " . $r->request->url->as_string . "***\n";
+              #   print "***    " . $referral_uri->as_string . "***\n";
+              #}
+              $bad_loop=1; 
+              last;
+          }
+          $r = $r->previous;
+      }
+      $resp = $self->do_http_request (
+             -method  => $method,
+             -url     => $referral_uri,
+             -headers => $newheaders,
+             -content => $content,
+             -saveto => $save_to,
+             -callback => $callback_func,
+             -chunk => $chunk,
+      ) unless $bad_loop;
+   }
+   # }}}
 
    if ( $HTTP::DAV::DEBUG > 1 ) {
       no warnings;

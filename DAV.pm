@@ -1,4 +1,4 @@
-# $Id: DAV.pm,v 0.29 2001/10/30 15:47:10 pcollins Exp $
+# $Id: DAV.pm,v 0.31 2002/04/13 12:21:07 pcollins Exp $
 package HTTP::DAV;
 
 use LWP;
@@ -17,10 +17,10 @@ use File::Glob;
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = sprintf("%d.%02d", q$Revision: 0.29 $ =~ /(\d+)\.(\d+)/);
-$VERSION_DATE= sprintf("%s", q$Date: 2001/10/30 15:47:10 $ =~ m# (.*) $# );
+$VERSION     = sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
+$VERSION_DATE= sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
 
-$DEBUG=0;
+$DEBUG=0; # Set this up to 3
 
 use strict;
 use vars  qw($VERSION $VERSION_DATE $DEBUG);
@@ -335,6 +335,8 @@ sub _get {
       }
 
       # Try and make the directory locally
+      print "MKDIR $local_name (before escape)\n";
+      $local_name = URI::Escape::uri_unescape($local_name);
       if (! mkdir $local_name ) {
          return $self->err('ERR_GENERIC',
            "mkdir local:$local_name failed: $!") 
@@ -353,6 +355,7 @@ sub _get {
             my $progeny_url = $progeny_r->get_uri();
             print "Found progeny:$progeny_url\n" if $DEBUG>2;
             my $progeny_local_filename = HTTP::DAV::Utils::get_leafname($progeny_url);
+            $progeny_local_filename = URI::Escape::uri_unescape($progeny_local_filename);
    
             $progeny_local_filename = 
                URI::file->new($progeny_local_filename)->abs("$local_name/");
@@ -386,6 +389,7 @@ sub _get {
             $$local_name = "";
          } else {
             $fh = FileHandle->new;
+            $local_name = URI::Escape::uri_unescape($local_name);
             if ( ! $fh->open(">$local_name") ) {
                return $self->err('ERR_GENERIC',
                   "open \">$local_name\" failed: $!", $url);
@@ -427,6 +431,7 @@ sub _get {
             delete $self->{_fh};
          }
       } else {
+         $local_name = URI::Escape::uri_unescape($local_name);
          $response = $resource->get( -save_to => $local_name  );
       }
 
@@ -788,11 +793,14 @@ sub put {
    my($self,@p) = @_;
    my ($local,$url,$callback) = 
       HTTP::DAV::Utils::rearrange(['LOCAL','URL','CALLBACK'], @p);
+
    $self->_start_multi_op("put $local",$callback);
    if ( ref($local) eq "SCALAR" ) {
       $self->_put(@p);
    } else {
+      $local =~ s/\ /\\ /g;
       my @globs=glob("$local");
+      #my @globs=glob("\"$local\"");
       foreach my $file (@globs) {
          print "Starting put of $file\n" if $HTTP::DAV::DEBUG>1;
          $self->_put(-local=>$file,-url=>$url,-callback=>$callback);
@@ -857,19 +865,22 @@ sub _put {
 
    # PUT A FILE
    } else {
-      my $content;
+      my $content="";
+      my $fail=0;
       if ($content_ptr) {
          $content = $$local;
       } else {
          if (! CORE::open(F,$local) ) {
-            $self->err('ERR_GENERIC', "Couldn't open local file $local: $!") 
+            $self->err('ERR_GENERIC', "Couldn't open local file $local: $!") ;
+            $fail=1;
          } else {
+            binmode F;
             while(<F>) { $content .= $_; }
             close F;
          }
       }
 
-      if (defined $content) {
+      if (!$fail) {
          my $resource = $self->new_resource( -uri => $target);
          my $response = $resource->put($content);
          if ($response->is_success) {

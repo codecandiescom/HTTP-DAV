@@ -1,4 +1,4 @@
-$Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
+$Id: README.pod,v 1.9 2002/04/13 12:20:37 pcollins Exp $
 
 =for html 
 <div id="content">
@@ -31,53 +31,39 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.29 (released 2001/10/30 15:47:10)
+The latest version is: v0.30 (released 2002/04/06 17:42:51)
 
 Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
-
-=head2 What's new
 
 =over 4
 
 =item *
 
-B<https>
+B<Windows support>
 
-https support as provided from the underlying LWP library has been tested against mod_dav and mod_ssl. Seems to work well. See INSTALLATION for more detail.
-
-=item *
-
-B<Digest authentication>
-
-Requires MD5 to be installed. See INSTALLATION notes.
+ - Multiple people have confirmed that PerlDAV install and runs under Windows (subject to fixing the binmode bug below).
 
 =item *
 
-B<various bug fixes>
+B<Apache 2 mod_dav support>
+
+ - Now works with mod_dav under Apache 2.
 
 =item *
 
-B<more powerful callback support for get()>
+B<bug fixes>
 
-Useful for giving progress indicators.
+ - Fixed bug to correctly handle the put/get of filenames with spaces in them.
 
-=item *
+ - Fixed bug to allow the PUT of empty files.
 
-B<get() to filehandles and scalar references>
+ - put() now uses binmode so that it works under Windows.
 
-the get() routine now allows you to pass by reference a filehandle or scalar in which to save the contents of the GET request.
+ - HTTP redirect code added in the previous release was incorrectly returning a HTTP::Response instead of a HTTP::DAV::Response
 
-=item *
+ - Fixed bug to allow https for copy and move (http:// was hardcoded).
 
-B<added namespace abbreviations in proppatch>
-
-Thanks to Jeremy for this patch.
-
-=item *
-
-B<improved redirect handling in Comms.pm>
-
-Thanks to Jeremy for this patch.
+ - Fixed strange copy/move bug for Apache2.0's mod_dav.
 
 =back
 
@@ -156,7 +142,7 @@ or if you just 'install HTTP::DAV' the lovely CPAN module should just magically 
 
 =head2 What Systems Does It Work With?
 
-HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later).  I have not ported it to Windows but would like somebody to have a shot at it (shouldn't be too hard. Honest).
+HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later). PerlDAV is known to run under Windows (although I haven't tried it myself) and should run under all Unix systems.
 
 =head1 WHERE ARE THE MANUALS?
 
@@ -184,7 +170,7 @@ If you'd like to see how well PerlDAV performs against a particular DAV server t
 
 I have tested PerlDAV against IIS5, mod_dav and the Xythos WFS.
 
-At the moment the test suite is still in development so will probably fail one or more tests. 
+Out of the box, the test suite should NOT fail on any tests.
 
 The test suite is the best way to test interopability between PerlDAV and other servers. I'd really like help with testing PerlDAV's interoperability. So if one or more tests fail against your server please follow the following steps:
 
@@ -218,7 +204,7 @@ Alternatively, you could have a shot at solving the bug yourself :)
 
 =head1 BUGS and TODO
 
-The test suite isn't fully finished yet.
+Need to convert XML::DOM to a DOM Level 2 compliant parser like XML::Gdome.
 
 =for html
 <P>See <A HREF="TODO.html">TODO</A> for what is left to be done.</P>
@@ -241,7 +227,7 @@ All rights reserved.
 
 You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
 
-$Id: README.pod,v 1.8 2001/10/30 16:02:06 pcollins Exp $
+$Id: README.pod,v 1.9 2002/04/13 12:20:37 pcollins Exp $
 
 =cut
 

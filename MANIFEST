@@ -35,6 +35,5 @@ t/test_data/file1
 t/test_data/file2
 t/test_data/file2.txt
 t/test_data/file3
-t/test_data/file3.txt
 t/test_data/file4.txt.gz
 t/test_data/subdir/test3.txt

@@ -22,7 +22,7 @@ my $TESTS=11;
 plan tests => $TESTS;
 fail_tests($TESTS) unless $test_url =~ /http/;
 
-HTTP::DAV::DebugLevel(0);
+HTTP::DAV::DebugLevel(3);
 
 my $targeturi = "perldav_test" .$$ . "_".time;
 my $shorturi = "perldav_test" .$$;

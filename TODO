@@ -29,6 +29,15 @@ TODO
 
        - mod t/* for IIS 5 lock and proppatch deficiencies.
        - how to we handle degradation for incomplete servers in test suite (IIS)?
+       - mod_dav has a very strange bug with lock-null resources.
+         The following combination of commands makes it weird out:
+            $ mkdir dir1
+            $ lock dir1
+            $ lock dir2 (this is a lock null)
+            $ move dir1 dir2
+            Now, the spec says that dir2 should now be the copy of dir1 and it should be locked.
+            However, mod_dav has an unlocked dir2. Even worse, if you delete dir2, there is 
+            a shadowed lock-null resource called dir2 sitting behind the scenes. Bad.
 
   Wishlist functions
 
@@ -53,7 +62,7 @@ TODO
        - DAV Delta-V
        - DAV ACL's
 
-    $Id: TODO.pod,v 1.9 2001/10/30 15:48:30 pcollins Exp $
+    $Id: TODO.pod,v 1.10 2002/04/06 17:46:08 pcollins Exp $
 
     ** This file was automatically generated from **
     ** doc/TODO.pod. To edit it, see there.    **

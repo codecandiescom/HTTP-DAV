@@ -1,7 +1,7 @@
-# $Id: Response.pm,v 0.12 2001/10/27 18:05:50 pcollins Exp $
+# $Id: Response.pm,v 0.13 2002/04/06 17:45:42 pcollins Exp $
 package HTTP::DAV::Response;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.12 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.13 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars qw(@ISA);
@@ -76,7 +76,9 @@ sub add_status_line {
 
 # PUBLIC METHODS
 
-sub is_multistatus { return ($_[0]->code eq "207" )? 1:0; }
+sub is_multistatus {
+    return ($_[0]->code eq "207" )? 1:0; 
+}
 
 sub messages {
    my ($self) = @_;
