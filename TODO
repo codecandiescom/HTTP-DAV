@@ -1,0 +1,19 @@
+$Id: TODO,v 0.3 2000/04/25 14:19:59 pcollins Exp $
+
+TODO
+   - COPY, MOVE and PROPPATCH are not yet implemented
+   - DAV::Client?? A funky client to simplify all of the raw resource commands.
+   - DAV command line programs.
+   - Namespaces are not currently supported. I munge around them since
+     they are not supported in DOM1 which is what XML::DOM uses.
+   - testing against Zope
+   - Rework Response.pm now that LWP::Status supports the status codes.
+
+   - On the wishlist
+      - support for LWPng which is fully HTTP/1.1 compliant.
+      - DAV Bindings
+      - DAV Redirects Reference
+      - DAV Orderered collections
+      - DAV DASL support
+      - DAV Delta-V
+      - DAV ACL's

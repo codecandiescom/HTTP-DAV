@@ -1,0 +1,95 @@
+$Id: README,v 0.1 2000/04/25 14:19:59 pcollins Exp $
+HTTP::DAV - A WebDAV client library for Perl5
+
+   This is DAV.pm (or HTTP::DAV), a Perl5 library for interacting 
+   and modifying content on webservers using the WebDAV protocol. Now 
+   you can LOCK, DELETE and PUT files and much more on a DAV-enabled 
+   webserver. Learn more about WebDAV at http://www.webdav.org/
+
+WARNING
+   This software is still being developed!!
+   Not even alpha status yet!!
+   It does function though. Please help to finish it.
+
+HOW DO I INSTALL IT?
+   Retrieve the latest copy from http://www.webdav.org/perldav/HTTP-DAV-0.2.tar.gz
+   To install this module, cd to the directory that contains this README 
+   file and type the following:
+
+      perl Makefile.PL
+      make
+      make test (may fail if you don't have internet access)
+      make install
+
+WHAT ARE THE PREREQUISITES?
+    - LWP       (Have not tested lower than v5.48)
+    - XML::DOM  (Have not tested lower than v1.26)
+    - Perl      (Have not tested lower than v5.005)
+
+   To get the latest versions of these prerequisite modules you can 
+   simply type this at the command prompt:
+      $ perl -MCPAN -e shell
+      cpan> install LWP
+      cpan> install XML::DOM
+
+AN EXAMPLE
+   use HTTP::DAV;
+   
+   $dav = HTTP::DAV->new;
+   $dav->credentials( "pcollins", "mypass", "http://localhost/" );
+   $resource = $dav->new_resource( -uri => "http://localhost/dav/myfile.txt" );
+   
+   $response = $resource->lock;
+   $response = $resource->put("New file contents\n");
+   print "BAD PUT\n" unless $response->is_success;
+   $response = $resource->unlock;
+   
+   $resource->propfind;
+   print "BAD PROPFIND\n" unless $response->is_success;
+   $getlastmodified = $resource->get_property( "getlastmodified" );
+   print "Last modified $getlastmodified\n";
+
+
+WHAT SYSTEMS DOES IT WORK WITH?
+   At the moment, this module is still in development, and as such 
+   I haven't had the time to test it on anything other than Linux.
+
+TODO
+   - COPY, MOVE and PROPPATCH are not yet implemented
+   - DAV::Client?? A funky client to simplify all of the raw resource commands.
+   - DAV command line programs.
+   - Namespaces are not currently supported. I munge around them since 
+     they are not supported in DOM1 which is what XML::DOM uses.
+   - testing against Zope
+   - Rework Response.pm now that LWP::Status supports the status codes.
+
+   - On the wishlist
+      - support for LWPng which is fully HTTP/1.1 compliant.
+      - DAV Bindings
+      - DAV Redirects Reference
+      - DAV Orderered collections
+      - DAV DASL support
+      - DAV Delta-V
+      - DAV ACL's
+   
+BUGS
+Yes. Many.
+ - Locking is still fairly buggered at the moment.
+ - The Response.pm module needs considerable work to allow access to 
+   the multistatus responses.
+
+AUTHOR AND COPYRIGHT
+   This module is Copyright (C) 2000 by
+
+       Patrick Collins
+       4/5 Stanley St, Randwick
+       Sydney, Australia
+
+       Email: pcollins@web.fairfax.com.au
+       Phone: +61 2 9282 2260
+
+   All rights reserved.
+
+   You may distribute this module under the terms of either the GNU General
+   Public License or the Artistic License, as specified in the Perl README
+   file.
