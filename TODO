@@ -1,7 +1,7 @@
-$Id: TODO,v 0.3 2000/04/25 14:19:59 pcollins Exp $
+$Id: TODO,v 0.4 2001/07/24 15:55:23 pcollins Exp $
 
 TODO
-   - COPY, MOVE and PROPPATCH are not yet implemented
+   - COPY and MOVE are not yet implemented
    - DAV::Client?? A funky client to simplify all of the raw resource commands.
    - DAV command line programs.
    - Namespaces are not currently supported. I munge around them since
@@ -13,7 +13,7 @@ TODO
       - support for LWPng which is fully HTTP/1.1 compliant.
       - DAV Bindings
       - DAV Redirects Reference
-      - DAV Orderered collections
+      - DAV Ordered collections
       - DAV DASL support
       - DAV Delta-V
       - DAV ACL's

@@ -15,5 +15,4 @@ examples/test_collections.pl
 examples/test_dav.pm
 examples/test_lock.pl
 examples/test_options.pl
-t/get.t
 t/loadme.t

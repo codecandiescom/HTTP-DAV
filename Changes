@@ -1,1 +1,13 @@
-Revision history for Perl extension DAV.
+Revision history for PerlDAV
+
+v0.05: General bug fixes and addition of proppatch
+
+ - added PROPPATCH method to HTTP::DAV::Resource, thanks to Sylvain Plancon.
+ - fixed uninitialized warnings in test scripts.
+ - fixed new lock bug in DAV::Lock, thanks to Ben Evans
+ - fixed dumb mistake where PUT was calling get instead of put, 
+   thanks to Sylvain and Ben again.
+ - fixed call to Utils::bad, thanks to Sylvain
+
+v0.04: Initial Release
+ - supports PUT,GET,MLCOL,DELETE,OPTIONS,PROPFIND,LOCK,UNLOCK,steal_lock,lock_discovery

@@ -1,10 +1,10 @@
-# $Id: Lock.pm,v 0.3 2000/04/25 14:20:15 pcollins Exp $
+# $Id: Lock.pm,v 0.4 2001/07/24 15:56:00 pcollins Exp $
 package HTTP::DAV::Lock;
 
 use XML::DOM;
 use HTTP::DAV::Utils;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.3 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
@@ -138,7 +138,7 @@ sub XML_lockdiscovery_parse {
    # <!ELEMENT activelock (lockscope, locktype, depth, owner?, timeout?, locktoken?) >
    foreach my $node_activelock ( @nodes_activelock ) {
 
-      my $lock = HTTP::DAV::Lock->new;
+      my $lock = HTTP::DAV::Lock->new(-owner=>1);
       push(@found_locks,$lock);
    
       my $nodes_lock_params = $node_activelock->getChildNodes();
@@ -331,7 +331,7 @@ sub interpret_timeout {
    if ($timeout =~ /Second\-(\d+)/ ) {
       return time + $1;
    } else {
-      bad("Ugh... can't interpret Timeout value \"timeout: $timeout\"\n");
+      HTTP::DAV::Utils::bad("Ugh... can't interpret Timeout value \"timeout: $timeout\"\n");
    }
 }
 

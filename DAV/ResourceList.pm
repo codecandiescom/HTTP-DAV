@@ -1,7 +1,7 @@
-# $Id: ResourceList.pm,v 0.3 2000/04/25 14:20:15 pcollins Exp $
+# $Id: ResourceList.pm,v 0.4 2001/07/24 15:56:01 pcollins Exp $
 package HTTP::DAV::ResourceList;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.3 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);

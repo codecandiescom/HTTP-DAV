@@ -1,4 +1,4 @@
-# $Id: Comms.pm,v 0.4 2000/04/25 14:20:15 pcollins Exp $
+# $Id: Comms.pm,v 0.5 2001/07/24 15:56:00 pcollins Exp $
 package HTTP::DAV::Comms;
 
 use HTTP::DAV::Utils;
@@ -6,7 +6,7 @@ use HTTP::DAV::Response;
 use LWP;
 use URI;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.5 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION $DEBUG);

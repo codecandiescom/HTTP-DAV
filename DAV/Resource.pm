@@ -1,4 +1,4 @@
-# $Id: Resource.pm,v 0.4 2000/04/25 14:20:15 pcollins Exp $
+# $Id: Resource.pm,v 0.6 2001/07/24 15:56:01 pcollins Exp $
 package HTTP::DAV::Resource;
 
 use HTTP::DAV;
@@ -6,7 +6,7 @@ use HTTP::DAV::Utils;
 use HTTP::DAV::Lock;
 use HTTP::DAV::ResourceList;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.6 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION); 
@@ -106,7 +106,8 @@ sub get_parent_resourcelist { $_[0]->{_parent_resourcelist}; }
 #
 sub get_locks { 
    my ($self,@p) = @_;
-   my($owned) = HTTP::DAV::Utils::rearrange(['OWNED'],@p);
+   my($owned) = "";
+   $owned = HTTP::DAV::Utils::rearrange(['OWNED'],@p) || "";
    $owned = "" unless $owned =~ /\d/;
 
    my @return_locks = ();
@@ -456,7 +457,7 @@ sub put {
 
    return $resp;
 }
-sub PUT { my $self=shift; $self->get( @_ ); }
+sub PUT { my $self=shift; $self->put( @_ ); }
 
 ###########################################################################
 # Make a collection
@@ -517,7 +518,62 @@ sub copy {
 ###########################################################################
 # proppatch a resource/collection
 sub proppatch {
-   my ($self) = @_;
+   my ($self,$namespace,$propname,$propvalue,@p) = @_;
+
+   my($depth,$text,@other) = HTTP::DAV::Utils::rearrange(['DEPTH','TEXT'],@p);
+
+   # 'depth' default is 0
+   $depth = 1;
+    
+   ####
+   # Setup the headers for the lock request
+   my $headers = new HTTP::Headers;
+   $headers->header("Content-type", "text/xml; charset=\"utf-8\"");
+   $headers->header("Depth", $depth);
+
+   my $xml_request = qq{<?xml version="1.0" encoding="utf-8"?>};
+   $xml_request .= "<D:propertyupdate xmlns:D=\"DAV:\">";
+   $xml_request .= "<D:set>";
+   if ($namespace eq "DAV" || $namespace eq "dav" || $namespace eq "") {
+     $xml_request .= "<D:prop>";
+     $xml_request .= "<D:".$propname.">".$propvalue."</D:".$propname.">";
+   }
+   else {
+     $xml_request .= "<D:prop xmlns:R=\"".$namespace."\">";
+     $xml_request .= "<R:".$propname.">".$propvalue."</R:".$propname.">";
+   }
+   $xml_request .= "</D:prop>";
+   $xml_request .= "</D:set>";
+   $xml_request .= "</D:propertyupdate>";
+    
+   ####
+   # Put the proppatch request to the remote server
+   my $resp= $self->{_comms}->do_http_request (
+          -method  => "PROPPATCH",
+          -url     => $self->{_uri},
+          -headers => $headers,
+          -content => $xml_request,
+      );
+
+
+   if ( $resp->content_type !~ m#text/xml# ) {
+      $resp->add_status_line("HTTP/1.1 422 Unprocessable Entity, no XML body.",
+                             "", $self->{_uri});
+   } else {
+      # use XML::DOM to parse the result.
+      my $parser = new XML::DOM::Parser;
+      my $doc = $parser->parse($resp->content);
+   
+      my $resource_list;
+      eval { $resource_list = $self->_XML_parse_multistatus( $doc, $resp ) };
+      print "XML error: " . $@ if $@;
+
+      if ($resource_list && $resource_list->count_resources() ) {
+         $self->{_resource_list} = $resource_list;
+      }
+   }
+
+   return $resp;
 }
 
 ###########################################################################

@@ -1,7 +1,7 @@
-# $Id: Utils.pm,v 0.3 2000/04/24 19:54:38 pcollins Exp $
+# $Id: Utils.pm,v 0.4 2001/07/24 15:56:01 pcollins Exp $
 package HTTP::DAV::Utils;
 
-$VERSION = sprintf("%d.%02d", q$Revision: 0.3 $ =~ /(\d+)\.(\d+)/);
+$VERSION = sprintf("%d.%02d", q$Revision: 0.4 $ =~ /(\d+)\.(\d+)/);
 
 use strict;
 use vars  qw($VERSION);
