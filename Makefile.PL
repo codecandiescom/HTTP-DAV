@@ -14,7 +14,8 @@ WriteMakefile(
                          PREOP => 'bin/dist' },
     'EXE_FILES'     => [ map {"bin/$_"} @programs_to_install ],
     'PREREQ_PM' => { 
-        'LWP' => 5.48,    # DAV requires LWP
-        'XML::DOM' => 0,  # DAV requires XML::DOM
+        'LWP'          => 5.48,
+        'Scalar::Util' => 0,
+        'XML::DOM'     => 0,
     },
 );

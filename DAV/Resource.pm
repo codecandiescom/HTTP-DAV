@@ -6,6 +6,7 @@ use HTTP::DAV::Utils;
 use HTTP::DAV::Lock;
 use HTTP::Date qw(str2time);
 use HTTP::DAV::ResourceList;
+use Scalar::Util ();
 use URI::Escape;
 
 $VERSION = sprintf("%d.%02d", q$Revision: 0.29 $ =~ /(\d+)\.(\d+)/);
@@ -43,6 +44,11 @@ sub _init {
    $self->{ "_comms" }              = $comms                ||"";
    $self->{ "_dav_client" }         = $client               ||"";
 
+   # Avoid circular references between
+   # - HTTP::DAV -> {_workingresource} and
+   # - HTTP::DAV::Resource -> {_dav_client}
+   Scalar::Util::weaken($self->{"_dav_client"});
+
    ####
    # Set the _uri
    $self->{_uri} = HTTP::DAV::Utils::make_uri($self->{_uri});
@@ -69,7 +75,16 @@ sub _init {
 # GET/SET
 #sub set_lockpolicy { cluck("Can't reset the lockpolicy on a Resource"); 0; }
 
-sub set_parent_resourcelist { $_[0]->{_parent_resourcelist} = $_[1]; }
+sub set_parent_resourcelist {
+    my ($self, $resource_list) = @_;
+
+    # Avoid circular references between the
+    # parent resource list and this child resource
+    Scalar::Util::weaken(
+        $self->{_parent_resourcelist} = $resource_list
+    );
+}
+
 sub set_property   { $_[0]->{_properties}{$_[1]} = $_[2];  }
 
 sub set_uri        { $_[0]->{_uri}  = HTTP::DAV::Utils::make_uri($_[1]); }
@@ -350,7 +365,7 @@ sub unlock {
    $headers->header("Lock-Token", "<${opaquelocktoken}>");
 
    if ( $opaquelocktoken ) {
-      print "UNLOCKING with '$opaquelocktoken'\n" if $HTTP::DAV::DEBUG>2;
+      warn "UNLOCKING with '$opaquelocktoken'\n" if $HTTP::DAV::DEBUG>2;
       # Put the unlock request to the remote server
       $resp= $self->{_comms}->do_http_request (
              -method  => "UNLOCK",
@@ -453,15 +468,16 @@ sub propfind {
       $resp->add_status_line("HTTP/1.1 422 Unprocessable Entity, no XML body.",
                              "", $self->{_uri}, $self->{_uri});
    } else {
+
       # use XML::DOM to parse the result.
       my $parser = new XML::DOM::Parser;
       my $doc = $parser->parse($resp->content);
-   
+
       # Setup a ResourceList in which to pump all of the collection 
       my $resource_list;
       eval { $resource_list = $self->_XML_parse_multistatus( $doc, $resp ) };
 
-      print "XML error: " . $@ if $@;
+      warn "XML error: " . $@ if $@;
 
       if ($resource_list && $resource_list->count_resources() ) {
          $self->{_resource_list} = $resource_list;
@@ -565,7 +581,7 @@ sub mkcol {
    
       # We're only interested in the error codes that come out of $resp.
       eval { $self->_XML_parse_multistatus( $doc, $resp ) };
-      print "XML error: " . $@ if $@;
+      warn "XML error: " . $@ if $@;
       $doc->dispose;
    }
 
@@ -654,9 +670,9 @@ sub _move_copy {
       $dest_str = $dest_url->scheme . "://". $dest_url->host_port . $dest_url->path; 
 
       if ($HTTP::DAV::DEBUG) {
-         print "*** INSTIGATING mod_dav WORKAROUND FOR DESTINATION HEADER BUG IN Resource::_move_copy\n";
-         print "*** Server type of " . $dest_url->host_port() . ": $server_type\n";
-         print "*** Adding port number :" . $dest_url->port . " to given url: $dest_url\n";
+         warn "*** INSTIGATING mod_dav WORKAROUND FOR DESTINATION HEADER BUG IN Resource::_move_copy\n";
+         warn "*** Server type of " . $dest_url->host_port() . ": $server_type\n";
+         warn "*** Adding port number :" . $dest_url->port . " to given url: $dest_url\n";
       }
 
    } 
@@ -675,11 +691,11 @@ sub _move_copy {
    $self         ->_setup_if_headers($headers,1);
    my $if1 = $headers->header('If');
    $if1||="";
-   print "COPY/MOVE If header for source: $if1\n" if $HTTP::DAV::DEBUG>2;
+   warn "COPY/MOVE If header for source: $if1\n" if $HTTP::DAV::DEBUG>2;
    $dest_resource->_setup_if_headers($headers,1);
    my $if2 = $headers->header('If');
    $if2||="";
-   print "COPY/MOVE If header for dest  : $if2\n" if $HTTP::DAV::DEBUG>2;
+   warn "COPY/MOVE If header for dest  : $if2\n" if $HTTP::DAV::DEBUG>2;
    $if1 = "$if1 $if2" if ($if1 || $if2);
    $headers->header('If', $if1 ) if $if1;
 
@@ -718,7 +734,7 @@ sub _move_copy {
       my $parser = new XML::DOM::Parser;
       my $doc = $parser->parse($resp->content);
       eval { $self->_XML_parse_multistatus( $doc, $resp ) };
-      print "XML error: " . $@ if $@;
+      warn "XML error: " . $@ if $@;
       $doc->dispose;
    }
 
@@ -812,7 +828,7 @@ sub proppatch {
       my $parser = new XML::DOM::Parser;
       my $doc = $parser->parse($resp->content);
       eval { $self->_XML_parse_multistatus( $doc, $resp ) };
-      print "XML error: " . $@ if $@;
+      warn "XML error: " . $@ if $@;
       $doc->dispose;
    }
 
@@ -848,7 +864,7 @@ sub delete {
    
       # We're only interested in the error codes that come out of $resp.
       eval { $self->_XML_parse_multistatus( $doc, $resp ) };
-      print "XML error: " . $@ if $@;
+      warn "XML error: " . $@ if $@;
       $doc->dispose;
    }
 
@@ -931,8 +947,7 @@ sub _XML_parse_multistatus {
        my ($href,$href_a,$resource);
        foreach my $node_href ( @nodes_href ) {
 
-          #my $node_href = $nodes_href->item($k);
-          $href      = $node_href->getFirstChild->getNodeValue();
+          $href = $node_href->getFirstChild->getNodeValue();
 
           # The href may be relative. If so make it absolute.
           # With the uri data "/mydir/myfile.txt"
@@ -947,14 +962,14 @@ sub _XML_parse_multistatus {
 
           # Create a new Resource to put into the list
           # Remove trailing slashes before comparing.
-          #print "Am about to compare $res_url and ". $self->get_uri ;
+          #warn "Am about to compare $res_url and ". $self->get_uri . "\n" ;
           if (HTTP::DAV::Utils::compare_uris($res_url, $self->get_uri ) ){
              $resource = $self;
-             #print " Exists. $resource\n";
+             #warn " Exists. $resource\n";
           } else {
              $resource = $self->get_client->new_resource( -uri=>$res_url );
              $resource_list->add_resource($resource);
-             #print " New. $resource\n";
+             #warn " New. $resource\n";
           }
        }
 
@@ -1015,7 +1030,7 @@ sub _XML_parse_multistatus {
 
    } # foreach response
 
-   #print "\nEND MULTI:". $self->as_string . $resource_list->as_string;
+   #warn "\nEND MULTI:". $self->as_string . $resource_list->as_string;
    return $resource_list;
 }
 
@@ -1158,7 +1173,7 @@ sub _setup_if_headers {
    $tagged = 1 unless defined $tagged;
    my $if = $self->{_lockedresourcelist}->tokens_to_if_header($tokens,$tagged);
    $headers->header( "If", $if ) if $if;
-   print "Setting if_header to \"If: $if\"\n" if $if && $HTTP::DAV::DEBUG;
+   warn "Setting if_header to \"If: $if\"\n" if $if && $HTTP::DAV::DEBUG;
 }
 
 ###########################################################################
@@ -1236,7 +1251,7 @@ sub as_string {
 # Requires you to have already performed a propfind
 sub build_ls {
    my ($self,$parent_resource) =@_;
-  
+
    # Build some local variables that have been sanitised.
    my $exec        = $self->get_property("executable")        || "?";
    my $contenttype =$self->get_property("getcontenttype")     || "";
@@ -1408,26 +1423,6 @@ sub build_ls {
 1;
 
 __END__
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 =head1 NAME
 

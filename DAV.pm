@@ -1,4 +1,4 @@
-# $Id: DAV.pm,v 0.31 2002/04/13 12:21:07 pcollins Exp $
+# $Id: DAV.pm,v 0.32 2002/04/13 12:21:07 pcollins Exp $
 package HTTP::DAV;
 
 use LWP;
@@ -17,7 +17,7 @@ use File::Glob;
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
+$VERSION     = '0.32'; #sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
 $VERSION_DATE= sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
 
 $DEBUG=0; # Set this up to 3
@@ -1574,7 +1574,7 @@ Put a string to the server:
 
 Put a local file to the server:
 
-  $d->put(-local=>"/tmp/index.html,-url=>"http://www.host.org/dav_dir/");
+  $d->put(-local=>"/tmp/index.html",-url=>"http://www.host.org/dav_dir/");
 
 Put a series of local files to the server:
 

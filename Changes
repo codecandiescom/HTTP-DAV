@@ -1,7 +1,19 @@
 Revision history for PerlDAV
 
-  v0.31 (released 2002/04/13):
+  v0.32 (released 2008/../..):
+    *   incompatibilities
 
+         - Now HTTP::DAV requires Perl 5.6.0+ and Scalar::Util (core in 5.8.x).
+
+    *   bug fixes
+
+         - Now HTTP::DAV objects are correctly released from memory when
+           they go out of scope. Now it should be possible to use multiple instances
+           of HTTP::DAV even in long-running processes.
+
+           Was caused by circular references between HTTP::DAV and HTTP::DAV::Resource.
+
+  v0.31 (released 2002/04/13):
     *   Apache 2 mod_dav support
 
          - Now works with mod_dav under Apache 2.
@@ -21,7 +33,6 @@ Revision history for PerlDAV
          - Fixed strange copy/move bug for Apache2.0's mod_dav.
 
   v0.29 (released 2001/10/31):
-
     *   https
 
         https support as provided from the underlying LWP library has been
@@ -52,7 +63,6 @@ Revision history for PerlDAV
         Thanks to Jeremy for this patch.
 
   v0.23 (released 2001/09/07):
-
     *   file globbing for get and put
 
         HTTP::DAV::get() and HTTP::DAV::put() now supports file globs. This
@@ -70,7 +80,6 @@ Revision history for PerlDAV
     *   bug fix in -overwrite flag in HTTP::DAV::copy/move.
 
   v0.22 (released 2001/09/03)
-
     Complete overhaul of API, recursive get and put, addition of dave.
 
     *   dave -- the new command line client
@@ -99,11 +108,10 @@ Revision history for PerlDAV
         is now included in PerlDAV. The test suite is built on top of the
         standard Perl Test::Harness modules. Still in development, the test
         suite is highlighting interoperability problems with DAV-servers a
-        lot quicker than before. See the the test suite & interoperability
-        entry elsewhere in this document section.
+        lot quicker than before. See "the test suite & interoperability"
+        section.
 
   v0.05 (released 2001/07/24)
-
     General bug fixes and addition of proppatch
 
      - added PROPPATCH method to HTTP::DAV::Resource, thanks to Sylvain Plancon.
@@ -114,7 +122,6 @@ Revision history for PerlDAV
      - fixed call to Utils::bad, thanks to Sylvain
 
   v0.04 (released 2000/04/25)
-
     Initial Release
 
      - supports PUT,GET,MLCOL,DELETE,OPTIONS,PROPFIND,LOCK,UNLOCK,steal_lock,lock_discovery

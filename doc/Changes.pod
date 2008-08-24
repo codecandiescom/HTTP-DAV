@@ -12,6 +12,28 @@ Revision history for PerlDAV
 
 =end text
 
+=head2 v0.32 (released 2008/../..):
+
+=over 4
+
+=item *
+
+B<incompatibilities>
+
+ - Now HTTP::DAV requires Perl 5.6.0+ and Scalar::Util (core in 5.8.x).
+
+=item *
+
+B<bug fixes>
+
+ - Now HTTP::DAV objects are correctly released from memory when
+   they go out of scope. Now it should be possible to use multiple instances
+   of HTTP::DAV even in long-running processes.
+
+   Was caused by circular references between HTTP::DAV and HTTP::DAV::Resource.
+
+=back
+
 =head2 v0.31 (released 2002/04/13):
 
 =over 4

@@ -1,13 +1,11 @@
 TODO
 
   dave
-
        - globs on lock(),unlock(),steal(),options()?,move(),copy(),propfind(),proppatch() (and set/unset).
        - rework ls to use globs.
        - multistatus responses don't come through nicely.
 
   HTTP::DAV
-
        - LWP doesn't allow callback on upload, only download. This means
          we can't do progress indicators on "PUT". How to do it? Could patch
          LWP? Specialise LWP::UserAgent? Ugh.
@@ -40,7 +38,6 @@ TODO
             a shadowed lock-null resource called dir2 sitting behind the scenes. Bad.
 
   Wishlist functions
-
        - testing against Zope
        - dave:implement netrc?
        - dave:tab completion? history?
@@ -49,7 +46,6 @@ TODO
        - redo auth as a callback? If so, needs 2 functions, get and success.
 
   Wishlist projects
-
        - Namespaces are not currently supported. I munge around them since
          they are not supported in DOM1 which is what XML::DOM uses.
        - Rework Response.pm now that LWP::Status supports the status codes.

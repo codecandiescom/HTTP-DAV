@@ -141,7 +141,8 @@ sub get_elements_by_tag_name {
    my $length = $nodelist->getLength();
    for ( my $i=0; $i < $length; $i++ ) {
       my $node = $nodelist->item($i);
-      if ( $node->getNodeName() =~ /:$elemname$/ ) {
+      # Debian change?
+      if ( $node->getNodeName() =~ /(?:^|:)$elemname$/ ) {
          push(@return_nodes,$node);
       }
    }

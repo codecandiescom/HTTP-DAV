@@ -31,11 +31,27 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.30 (released 2002/04/06 17:42:51)
+The latest version is: v0.32 (released 2002/04/13 12:21:07)
 
 Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
 
 =over 4
+
+=item *
+
+B<incompatibilities>
+
+ - Now HTTP::DAV requires Perl 5.6.0+ and Scalar::Util (core in 5.8.x).
+
+=item *
+
+B<bug fixes>
+
+ - Now HTTP::DAV objects are correctly released from memory when
+   they go out of scope. Now it should be possible to use multiple instances
+   of HTTP::DAV even in long-running processes.
+
+   Was caused by circular references between HTTP::DAV and HTTP::DAV::Resource.
 
 =item *
 
@@ -48,22 +64,6 @@ B<Windows support>
 B<Apache 2 mod_dav support>
 
  - Now works with mod_dav under Apache 2.
-
-=item *
-
-B<bug fixes>
-
- - Fixed bug to correctly handle the put/get of filenames with spaces in them.
-
- - Fixed bug to allow the PUT of empty files.
-
- - put() now uses binmode so that it works under Windows.
-
- - HTTP redirect code added in the previous release was incorrectly returning a HTTP::Response instead of a HTTP::DAV::Response
-
- - Fixed bug to allow https for copy and move (http:// was hardcoded).
-
- - Fixed strange copy/move bug for Apache2.0's mod_dav.
 
 =back
 
@@ -101,18 +101,22 @@ C<dave> will be installed to /usr/local/bin. This suits most people but you can 
 
 =over 4
 
+=item *
+
+Perl 5.6.0+
+
 =item * 
 
 LWP (Have not tested lower than v5.48) 
+
+=item *
+
+Scalar::Util (standard library from 5.8.0+)
 
 =item * 
 
 XML::DOM (Have not tested lower than v1.26). 
 Requires James Clark's expat library:
-
-=item *
-
-Perl5 (Have not tested lower than v5.005) 
 
 =back
 
@@ -142,7 +146,7 @@ or if you just 'install HTTP::DAV' the lovely CPAN module should just magically 
 
 =head2 What Systems Does It Work With?
 
-HTTP::DAV and dave are pure perl so only needs Perl5.003 (or later). PerlDAV is known to run under Windows (although I haven't tried it myself) and should run under all Unix systems.
+HTTP::DAV and dave are pure perl so only needs Perl 5.6.0 (or later). PerlDAV is known to run under Windows (although I haven't tried it myself) and should run under all Unix systems.
 
 =head1 WHERE ARE THE MANUALS?
 
