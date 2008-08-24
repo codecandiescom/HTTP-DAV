@@ -1,4 +1,4 @@
-# $Id: DAV.pm,v 0.32 2002/04/13 12:21:07 pcollins Exp $
+# $Id: DAV.pm,v 0.33 2008/08/24 12:21:07 cosimo Exp $
 package HTTP::DAV;
 
 use LWP;
@@ -17,8 +17,10 @@ use File::Glob;
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = '0.32'; #sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
-$VERSION_DATE= sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
+$VERSION     = '0.33';
+               #sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
+$VERSION_DATE= '2008/08/24';
+               #sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
 
 $DEBUG=0; # Set this up to 3
 
@@ -1803,9 +1805,13 @@ For example:
 
 =item B<new_resource>
 
-Creates a new resource object with which to play. This is the preferred way of creating an HTTP::DAV::Resource object if required. Why? Because each Resource object needs to sit within a global HTTP::DAV client. Also, because the new_resource routine checks the HTTP::DAV locked resource list before creating a new object.
+Creates a new resource object with which to play.
+This is the preferred way of creating an C<HTTP::DAV::Resource> object if required.
+Why? Because each Resource object needs to sit within a global HTTP::DAV client. 
+Also, because the new_resource routine checks the C<HTTP::DAV> locked resource
+list before creating a new object.
 
- $dav->new_resource( -uri => "http://..." );
+    $dav->new_resource( -uri => "http://..." );
 
 =item B<set_workingresource(URL)>
 
@@ -1813,25 +1819,53 @@ Sets the current working resource to URL.
 
 You shouldn't need this method. Call open or cwd to set the working resource.
 
-You CAN call set_workingresource but you will need to perform a propfind immediately following it to ensure that the working resource is valid.
+You CAN call C<set_workingresource()> but you will need to perform a
+C<propfind> immediately following it to ensure that the working
+resource is valid.
 
 =back
 
 =head1 INSTALLATION, TODO, MAILING LISTS and REVISION HISTORY
 
-Please see the primary HTTP::DAV webpage at (http://www.webdav.org/perldav/http-dav/) or the README file in this library.
+Please see the primary HTTP::DAV webpage at
+(http://www.webdav.org/perldav/http-dav/)
+or the README file in this library.
 
 =head1 SEE ALSO
 
 You'll want to also read:
-C<HTTP::DAV::Response>, C<HTTP::DAV::Resource>, C<dave>
+
+=over *
+
+=item C<HTTP::DAV::Response>
+
+=item C<HTTP::DAV::Resource>
+
+=item C<dave>
+
+=back
 
 and maybe if you're more inquisitive:
-C<LWP::UserAgent>,C<HTTP::Request>, C<HTTP::DAV::Comms>,C<HTTP::DAV::Lock>, C<HTTP::DAV::ResourceList>, C<HTTP::DAV::Utils>
+
+=over *
+
+=item C<LWP::UserAgent>
+
+=item C<HTTP::Request>
+
+=item C<HTTP::DAV::Comms>
+
+=item C<HTTP::DAV::Lock>
+
+=item C<HTTP::DAV::ResourceList>
+
+=item C<HTTP::DAV::Utils>
+
+=back
 
 =head1 AUTHOR AND COPYRIGHT
 
-This module is Copyright (C) 2001 by
+This module is Copyright (C) 2001-2008 by
 
     Patrick Collins
     G03 Gloucester Place, Kensington
@@ -1842,6 +1876,11 @@ This module is Copyright (C) 2001 by
 
 All rights reserved.
 
-You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
+Current co-maintainer of the module is Opera Software ASA,
+L<opera@cpan.org>.
+
+You may distribute this module under the terms of either the
+GNU General Public License or the Artistic License,
+as specified in the Perl README file.
 
 =cut

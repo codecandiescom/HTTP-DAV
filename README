@@ -14,9 +14,15 @@ PerlDAV -- A WebDAV client library for Perl5
     Learn more about WebDAV at http://www.webdav.org/
 
 LATEST VERSION AND WHAT'S NEW
-    The latest version is: v0.32 (released 2002/04/13 12:21:07)
+    The latest version is: v0.33 (released 2008/08/24)
 
-    Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+    Download: http://search.cpan.org/dist/HTTP-DAV/
+
+    *   documentation
+
+          - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV
+
+          - Fixed various inconsistencies in the v0.32 documentation
 
     *   incompatibilities
 
@@ -38,8 +44,7 @@ LATEST VERSION AND WHAT'S NEW
 
          - Now works with mod_dav under Apache 2.
 
-    See the Changes file for previous releases.
-
+See the Changes file for previous releases.
 INSTALLING PERLDAV
     The lazy way to install PerlDAV:
 
@@ -157,8 +162,7 @@ BUGS and TODO
     Need to convert XML::DOM to a DOM Level 2 compliant parser like
     XML::Gdome.
 
-    See TODO for what is left to be done.
-
+See TODO for what is left to be done.
 AUTHOR AND COPYRIGHT
     This module is Copyright (C) 2001 by
 
@@ -177,6 +181,5 @@ AUTHOR AND COPYRIGHT
 
     $Id: README.pod,v 1.9 2002/04/13 12:20:37 pcollins Exp $
 
-    ** This file was automatically generated from **
-    ** doc/Changes.pod. To edit it, see there.    **
-
+** This file was automatically generated from **
+** doc/Changes.pod. To edit it, see there.    **

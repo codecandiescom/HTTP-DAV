@@ -11,8 +11,22 @@ Revision history for PerlDAV
 Revision history for PerlDAV
 
 =end text
+  
+=head2 v0.33 (released 2008/08/24):
 
-=head2 v0.32 (released 2008/../..):
+=over 4
+
+=item *
+
+B<documentation>
+
+  - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV
+
+  - Fixed various inconsistencies in the v0.32 documentation
+
+=back
+
+=head2 v0.32 (released 2008/08/24):
 
 =over 4
 

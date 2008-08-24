@@ -31,11 +31,19 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.32 (released 2002/04/13 12:21:07)
+The latest version is: v0.33 (released 2008/08/24)
 
-Download: http://www.cpan.org/authors/id/P/PC/PCOLLINS/
+Download: http://search.cpan.org/dist/HTTP-DAV/
 
 =over 4
+
+=item *
+
+B<documentation>
+
+  - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV
+
+  - Fixed various inconsistencies in the v0.32 documentation
 
 =item *
 

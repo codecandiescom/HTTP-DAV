@@ -1,6 +1,12 @@
 Revision history for PerlDAV
+  v0.33 (released 2008/08/24):
+    *   documentation
 
-  v0.32 (released 2008/../..):
+          - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV
+
+          - Fixed various inconsistencies in the v0.32 documentation
+
+  v0.32 (released 2008/08/24):
     *   incompatibilities
 
          - Now HTTP::DAV requires Perl 5.6.0+ and Scalar::Util (core in 5.8.x).
@@ -126,6 +132,5 @@ Revision history for PerlDAV
 
      - supports PUT,GET,MLCOL,DELETE,OPTIONS,PROPFIND,LOCK,UNLOCK,steal_lock,lock_discovery
 
-    ** This file was automatically generated from **
-    ** doc/Changes.pod. To edit it, see there.    **
-
+** This file was automatically generated from **
+** doc/Changes.pod. To edit it, see there.    **
