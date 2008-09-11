@@ -31,11 +31,18 @@ Learn more about WebDAV at http://www.webdav.org/
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.33 (released 2008/08/24)
+The latest version is: v0.34 (released 2008/09/11)
 
 Download: http://search.cpan.org/dist/HTTP-DAV/
 
 =over 4
+
+=item *
+
+B<bug fixes>
+
+  - Fixed RT #39150 (http://rt.cpan.org/Public/Bug/Display.html?id=39150),
+    about downloading multiple files in the same directory.
 
 =item *
 

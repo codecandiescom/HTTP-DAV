@@ -1,8 +1,15 @@
 Revision history for PerlDAV
+
+  v0.34 (released 2008/09/11):
+    *   bug fixes
+
+          - Fixed RT #39150 (http://rt.cpan.org/Public/Bug/Display.html?id=39150),
+            about downloading multiple files in the same directory.
+
   v0.33 (released 2008/08/24):
     *   documentation
 
-          - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV
+          - Clearly state that opera software asa is now co-maintainer of http::dav
 
           - Fixed various inconsistencies in the v0.32 documentation
 
@@ -132,5 +139,6 @@ Revision history for PerlDAV
 
      - supports PUT,GET,MLCOL,DELETE,OPTIONS,PROPFIND,LOCK,UNLOCK,steal_lock,lock_discovery
 
-** This file was automatically generated from **
-** doc/Changes.pod. To edit it, see there.    **
+    ** This file was automatically generated from **
+    ** doc/Changes.pod. To edit it, see there.    **
+

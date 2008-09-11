@@ -17,9 +17,9 @@ use File::Glob;
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = '0.33';
+$VERSION     = '0.34';
                #sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
-$VERSION_DATE= '2008/08/24';
+$VERSION_DATE= '2008/09/11';
                #sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
 
 $DEBUG=0; # Set this up to 3
@@ -280,26 +280,31 @@ sub get {
            "Can't retrieve multiple files to a single filehandle\n");
    }
 
+   # If it's a dir, remove last '/' from destination.
+   # Later we need to concatenate the destination filename. 
+   if (defined $to && $to ne "" && -d $to) {
+      $to =~ s{/$}{};
+   }
 
    # Foreach file... do the get.
    foreach my $u ( @urls ) {
-      my ($left,$leafname) = HTTP::DAV::Utils::split_leaf($u);
+      my ($left, $leafname) = HTTP::DAV::Utils::split_leaf($u);
+      my $dest_file;
 
       if (-d $to) {
-         $to=~ s/\/$//g;
-         $to = "$to/$leafname";
+         $dest_file = "$to/$leafname";
       } elsif ( !defined $to || $to eq "" ) {
-         $to = $leafname;
+         $dest_file = $leafname;
       }
 
-      print "get: $u -> $to\n" if $DEBUG;
+      warn "get: $u -> $dest_file\n" if $DEBUG;
 
       # Setup the resource based on the passed url and do a propfind.
       my $resource = $self->new_resource( -uri => $u);
       my $resp = $resource->propfind(-depth=>1);
       return $self->err('ERR_RESP_FAIL',$resp->message(),$u) if ($resp->is_error);
 
-      $self->_get($resource,$to,$callback,$chunk);
+      $self->_get($resource, $dest_file, $callback, $chunk);
    }
 
    $self->_end_multi_op();

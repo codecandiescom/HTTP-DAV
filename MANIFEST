@@ -15,6 +15,11 @@ bin/dist
 doc/Changes.pod
 doc/README.pod
 doc/TODO.pod
+doc/html/Changes.html
+doc/html/dave.html
+doc/html/HTTP-DAV.html
+doc/html/index.html
+doc/html/TODO.html
 t/1_loadme.t
 t/1_utils.t
 t/2_options.t
