@@ -1,5 +1,11 @@
 Revision history for PerlDAV
 
+  v0.35 (released 2008/11/03):
+    *   bug fixes
+
+          - Fixed RT #40318 (http://rt.cpan.org/Public/Bug/Display.html?id=40318),
+            about getting single or multiple files directly to \*STDOUT.
+
   v0.34 (released 2008/09/11):
     *   bug fixes
 

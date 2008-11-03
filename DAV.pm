@@ -1,4 +1,4 @@
-# $Id: DAV.pm,v 0.33 2008/08/24 12:21:07 cosimo Exp $
+# $Id: DAV.pm,v 0.35 2008/11/03 10:05:00 cosimo Exp $
 package HTTP::DAV;
 
 use LWP;
@@ -17,9 +17,9 @@ use File::Glob;
 use Cwd qw(getcwd); # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION     = '0.34';
+$VERSION     = '0.35';
                #sprintf("%d.%02d", q$Revision: 0.31 $ =~ /(\d+)\.(\d+)/);
-$VERSION_DATE= '2008/09/11';
+$VERSION_DATE= '2008/11/03';
                #sprintf("%s", q$Date: 2002/04/13 12:21:07 $ =~ m# (.*) $# );
 
 $DEBUG=0; # Set this up to 3
@@ -263,36 +263,44 @@ sub get {
    ############
    # HANDLE -TO
    #
-   $to ||= "";
-   $to = getcwd() if ( $to eq "." );
+   $to ||= '';
+   if ($to eq '.') {
+      $to = getcwd();
+   }
 
    # If the TO argument is a file handle or a scalar 
-   # then check that 
-   # we only got one glob. If we got multiple globs, then we 
-   # can't keep going because we can't write multiple files 
+   # then check that we only got one glob. If we got multiple
+   # globs, then we can't keep going because we can't write multiple files 
    # to one FileHandle.
-   if  ( ref($to) =~ /SCALAR/ && $#urls>0 ) { 
-        return $self->err('ERR_WRONG_ARGS',
+   if ($#urls > 0) {
+      if (ref($to) =~ /SCALAR/) { 
+         return $self->err('ERR_WRONG_ARGS',
            "Can't retrieve multiple files to a single scalar\n");
-   }
-   elsif ( ref($to) =~ /GLOB/ && $#urls>0 ) {
+      }
+      elsif (ref($to) =~ /GLOB/) {
         return $self->err('ERR_WRONG_ARGS',
            "Can't retrieve multiple files to a single filehandle\n");
+      }
    }
 
    # If it's a dir, remove last '/' from destination.
    # Later we need to concatenate the destination filename. 
-   if (defined $to && $to ne "" && -d $to) {
+   if (defined $to && $to ne '' && -d $to) {
       $to =~ s{/$}{};
    }
 
    # Foreach file... do the get.
    foreach my $u ( @urls ) {
       my ($left, $leafname) = HTTP::DAV::Utils::split_leaf($u);
-      my $dest_file;
 
+      # Handle SCALARREF and GLOB cases
+      my $dest_file = $to;
+
+      # Directories
       if (-d $to) {
          $dest_file = "$to/$leafname";
+
+      # Multiple targets
       } elsif ( !defined $to || $to eq "" ) {
          $dest_file = $leafname;
       }
@@ -302,7 +310,10 @@ sub get {
       # Setup the resource based on the passed url and do a propfind.
       my $resource = $self->new_resource( -uri => $u);
       my $resp = $resource->propfind(-depth=>1);
-      return $self->err('ERR_RESP_FAIL',$resp->message(),$u) if ($resp->is_error);
+
+      if ($resp->is_error) {
+         return $self->err('ERR_RESP_FAIL', $resp->message(), $u);
+      }
 
       $self->_get($resource, $dest_file, $callback, $chunk);
    }
@@ -383,15 +394,16 @@ sub _get {
    else 
    {
       my $response;
+      my $name_ref = ref $local_name;
 
-      if ($callback || ref($local_name) =~ /SCALAR/ ) {
+      if ($callback || $name_ref =~ /SCALAR/ || $name_ref =~ /GLOB/) {
          $self->{_so_far} = 0;
    
          my $fh;
          my $put_to_scalar = 0;
-         if (ref($local_name) =~ /GLOB/ ) {
+         if ($name_ref =~ /GLOB/ ) {
             $fh = $local_name;
-         } elsif ( ref($local_name) =~ /SCALAR/ ) {
+         } elsif ($name_ref =~ /SCALAR/) {
             $put_to_scalar = 1;
             $$local_name = "";
          } else {
