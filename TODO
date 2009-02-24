@@ -1,5 +1,4 @@
 TODO
-
   dave
        - globs on lock(),unlock(),steal(),options()?,move(),copy(),propfind(),proppatch() (and set/unset).
        - rework ls to use globs.
@@ -58,8 +57,7 @@ TODO
        - DAV Delta-V
        - DAV ACL's
 
-    $Id: TODO.pod,v 1.10 2002/04/06 17:46:08 pcollins Exp $
+    $Id: TODO 160 2009-02-24 23:03:39Z cosimo $
 
-    ** This file was automatically generated from **
-    ** doc/TODO.pod. To edit it, see there.    **
-
+** This file was automatically generated from **
+** doc/TODO.pod. To edit it, see there.    **
