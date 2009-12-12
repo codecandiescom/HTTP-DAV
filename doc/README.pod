@@ -1,4 +1,4 @@
-$Id: README.pod 169 2009-06-07 19:34:33Z cosimo $
+$Id$
 
 =for html 
 <div id="content">
@@ -27,15 +27,23 @@ B<dave> - the DAV Explorer, an end-user Unix console program for interacting wit
 
 =back
 
-Learn more about WebDAV at http://www.webdav.org/
+Learn more about WebDAV at http://www.webdav.org/ (outdated)
 
 =head1 LATEST VERSION AND WHAT'S NEW
 
-The latest version is: v0.38 (released 2009/06/09)
+The latest version is: v0.39 (released 2009/12/12)
 
 Download: http://search.cpan.org/dist/HTTP-DAV/
 
 =over 4
+
+=item *
+
+B<bug fixes>
+
+Fixed RT #52665 (L<http://rt.cpan.org/Public/Bug/Display.html?id=52665>),
+Using dave or C<propfind()> on URLs containing escaped chars (C<%xx>) could fail,
+due to upper/lower case differences. Thanks to cebjyre for the patch and test case.
 
 =item *
 
@@ -307,7 +315,7 @@ You can contact us at C<opera@cpan.org>.
 
 You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
 
-$Id: README.pod 169 2009-06-07 19:34:33Z cosimo $
+$Id$
 
 =cut
 

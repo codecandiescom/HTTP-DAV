@@ -1,4 +1,4 @@
-# $Id: Comms.pm 159 2009-02-24 23:02:54Z cosimo $
+# $Id$
 
 package HTTP::DAV::Comms;
 

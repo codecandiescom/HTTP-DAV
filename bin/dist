@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: dist 150 2009-01-29 22:17:42Z Cosimo $
+# $Id$
 
 URL="http://www.webdav.org/perldav"
 HTML="doc/html"

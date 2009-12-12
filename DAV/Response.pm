@@ -1,4 +1,4 @@
-# $Id: Response.pm 150 2009-01-29 22:17:42Z Cosimo $
+# $Id$
 package HTTP::DAV::Response;
 
 $VERSION = sprintf("%d.%02d", q$Revision: 0.13 $ =~ /(\d+)\.(\d+)/);
