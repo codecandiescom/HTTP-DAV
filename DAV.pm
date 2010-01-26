@@ -20,10 +20,11 @@ use File::Glob;
 use Cwd qw(getcwd);  # Can't import all of it, cwd clashes with our namespace.
 
 # Globals
-$VERSION = '0.39';
-$VERSION_DATE = '2009/12/12';
+$VERSION = '0.40';
+$VERSION_DATE = '2010/01/26';
 
-$DEBUG = 0;          # Set this up to 3
+# Set this up to 3
+$DEBUG = 0;
 
 use strict;
 use vars qw($VERSION $VERSION_DATE $DEBUG);

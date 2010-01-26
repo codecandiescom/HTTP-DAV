@@ -2,19 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>PerlDAV</title>
-<link rel="stylesheet" href="perldav.css" type="text/css" />
+<title>PerlDAV -- A WebDAV client library for Perl5</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:" />
 </head>
 
-<body>
+<body style="background-color: white">
 
 
 <!-- INDEX BEGIN -->
 <div name="index">
 <p><a name="__index__"></a></p>
-<!--
 
 <ul>
 
@@ -42,9 +40,7 @@
 	<li><a href="#license">LICENSE</a></li>
 </ul>
 
--->
-
-
+<hr name="index" />
 </div>
 <!-- INDEX END -->
 
@@ -60,100 +56,13 @@
 <p><strong>dave</strong> - the DAV Explorer, an end-user Unix console program for interacting with WebDAV servers. dave looks and feels like a standard Unix ftp program.</p>
 </li>
 </ul>
-<p>Learn more about WebDAV at <a href="http://www.webdav.org/">http://www.webdav.org/</a> (outdated)</p>
+<p>Learn more about WebDAV at <a href="http://www.webdav.org/">http://www.webdav.org/</a></p>
 <p>
 </p>
 <hr />
 <h1><a name="latest_version_and_what_s_new">LATEST VERSION AND WHAT'S NEW</a></h1>
-<p>The latest version is: v0.39 (released 2009/12/12)</p>
-<p>Download: <a href="http://search.cpan.org/dist/HTTP-DAV/">http://search.cpan.org/dist/HTTP-DAV/</a></p>
-<ul>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed RT #52665 (<a href="http://rt.cpan.org/Public/Bug/Display.html?id=52665">http://rt.cpan.org/Public/Bug/Display.html</a>),
-Using dave or <code>propfind()</code> on URLs containing escaped chars (<code>%xx</code>) could fail,
-due to upper/lower case differences. Thanks to cebjyre for the patch and test case.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed RT #14506 (http://rt.cpan.org/Public/Bug/Display.html?id=14506),
-about the missing <code>get_lastresponse()</code> method. It was a documentation bug.</p>
-<p>Fixed RT #29788 (http://rt.cpan.org/Public/Bug/Display.html?id=29788),
-avoid file corruptions on Win32 when calling HTTP::DAV::get() method.</p>
-<p>Fixed RT #31014 (http://rt.cpan.org/Public/Bug/Display.html?id=31014),
-probably already in v0.34, since it seems related to <code>propfind()</code> &quot;depth&quot; bug.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed RT #44409 (http://rt.cpan.org/Public/Bug/Display.html?id=44409),
-Small bug in HTTP::DAV::put(). Passing a reference as local content resulted
-in the &quot;SCALAR(0x12345678)&quot; being logged instead of the real scalar.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed RT #19616 (http://rt.cpan.org/Public/Bug/Display.html?id=19616),
-LWP::UserAgent::redirect_ok() is not changed anymore. We're subclassing
-it from HTTP::DAV::UserAgent and overriding <code>redirect_ok()</code> there.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed RT #42877 (http://rt.cpan.org/Public/Bug/Display.html?id=42877),
-HTTP::DAV::UserAgent::credentials() has been modified to behave like
-LWP::UserAgent::credentials(), otherwise basic authentication breakages
-can occur.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<p>Fixed a problem with <code>-depth</code> argument to <code>HTTP::DAV::propfind()</code> that
-could lead to massive performance degradation, especially when running
-<code>propfind()</code> against large folders.
-<code>-depth</code> was set to 1 even when passed as zero.</p>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<pre>
-  - Fixed RT #40318 (<a href="http://rt.cpan.org/Public/Bug/Display.html?id=40318">http://rt.cpan.org/Public/Bug/Display.html?id=40318</a>),
-    about getting single or multiple files directly to \*STDOUT.</pre>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<pre>
-  - Fixed RT #39150 (<a href="http://rt.cpan.org/Public/Bug/Display.html?id=39150">http://rt.cpan.org/Public/Bug/Display.html?id=39150</a>),
-    about downloading multiple files in the same directory.</pre>
-</li>
-<li>
-<p><strong>documentation</strong></p>
-<pre>
-  - Clearly state that Opera Software ASA is now co-maintainer of HTTP::DAV</pre>
-<pre>
-  - Fixed various inconsistencies in the v0.32 documentation</pre>
-</li>
-<li>
-<p><strong>incompatibilities</strong></p>
-<pre>
- - Now HTTP::DAV requires Perl 5.6.0+ and Scalar::Util (core in 5.8.x).</pre>
-</li>
-<li>
-<p><strong>bug fixes</strong></p>
-<pre>
- - Now HTTP::DAV objects are correctly released from memory when
-   they go out of scope. Now it should be possible to use multiple instances
-   of HTTP::DAV even in long-running processes.</pre>
-<pre>
-   Was caused by circular references between HTTP::DAV and HTTP::DAV::Resource.</pre>
-</li>
-<li>
-<p><strong>Windows support</strong></p>
-<pre>
- - Multiple people have confirmed that PerlDAV install and runs under Windows (subject to fixing the binmode bug below).</pre>
-</li>
-<li>
-<p><strong>Apache 2 mod_dav support</strong></p>
-<pre>
- - Now works with mod_dav under Apache 2.</pre>
-</li>
-</ul>
-<P>See the <A HREF="Changes.html">Changes file</A> for previous releases.</P><p>
+<p>See the included <code>Changes</code> file for the full changelog.</p>
+<p>
 </p>
 <hr />
 <h1><a name="installing_perldav">INSTALLING PERLDAV</a></h1>
@@ -282,8 +191,9 @@ then:
 </p>
 <hr />
 <h1><a name="maintainer">MAINTAINER</a></h1>
-<p>The current maintainer of HTTP-DAV is Opera Software ASA.
-You can contact us at <code>opera@cpan.org</code>.</p>
+<p>The current maintainer of HTTP-DAV is Cosimo Streppone for
+Opera Software ASA. You can contact us at <code>cosimo@cpan.org</code>
+or <code>opera@cpan.org</code>.</p>
 <p>
 </p>
 <hr />

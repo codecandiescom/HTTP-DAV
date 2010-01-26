@@ -202,37 +202,37 @@ sub XML_remove_namespace {
 
 ###########################################################################
 sub make_uri {
-   my $uri = shift;
-   if ( ref($uri) =~ /URI/ ) { 
-      $uri = $uri->as_string;
-   }
-   # Remove double slashes from the url
-   $uri =URI->new($uri);
-   my $path = $uri->path;
-   $path =~ s{//}{/}g;
-   #print "make_uri: $uri->$path\n";
-   $uri->path($path);
-   #print "make_uri: $uri\n";
-   return $uri;
+    my $uri = shift;
+    if (ref($uri) =~ /URI/) { 
+        $uri = $uri->as_string;
+    }
+    # Remove double slashes from the url
+    $uri = URI->new($uri);
+    my $path = $uri->path;
+    $path =~ s{//}{/}g;
+    #print "make_uri: $uri->$path\n";
+    $uri->path($path);
+    #print "make_uri: $uri\n";
+    return $uri;
 }
 
 sub make_trail_slash {
-   my ($uri) = @_;
-   $uri =~ s{/*$}{};
-   $uri .= '/';
-   return $uri;
+    my ($uri) = @_;
+    $uri =~ s{/*$}{}g;
+    $uri .= '/';
+    return $uri;
 }
 
 sub compare_uris {
-   my ($uri1,$uri2) = @_;
+    my ($uri1,$uri2) = @_;
 
-   for ($uri1, $uri2) {
-      $_ = make_uri($_);
-      s{/$}{};
-      s{(%[0-9a-fA-F][0-9a-fA-F])}{lc $1}eg;
-   }
+    for ($uri1, $uri2) {
+        $_ = make_uri($_);
+        s{/$}{};
+        s{(%[0-9a-fA-F][0-9a-fA-F])}{lc $1}eg;
+	}
 
-   return $uri1 eq $uri2;
+    return $uri1 eq $uri2;
 }
 
 # This subroutine takes a URI and gets the last portion 
