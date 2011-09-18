@@ -1,5 +1,26 @@
 #!/usr/bin/env perl
-# $Id$
+
+=pod
+
+=head1 NAME
+
+dave - DAV Explorer
+
+=head1 SYNOPSIS
+
+    dave [OPTIONS] URL
+
+E.g. 
+
+   $ dave -u pcollins -p mypass www.host.org/dav_dir/
+   ...
+   dave> get file.txt
+
+Use C<dave -h> to get help on options.
+
+Use C<perldoc dave> for the whole manpage.
+
+=cut
 
 use strict;
 use vars '$AUTOLOAD';
@@ -14,7 +35,7 @@ use Text::ParseWords;
 use Time::Local;
 use URI::file;
 
-my $VERSION    = sprintf("%d.%02d", q$Revision: 1.23 $ =~ /(\d+)\.(\d+)/);
+my $VERSION    = "2.00";
 my $TMP_DIR    = "/tmp";
 my $LOCK_OWNER = "dave/v$VERSION (pid $$)";
 my $USER_AGENT = "dave/v$VERSION (perldav)";
@@ -28,13 +49,18 @@ my $user='';
 my $pass='';
 my $debug=0;
 GetOptions(
-   'help|?'=>\$opt_h, 
-   'man|?' =>\$opt_man, 
-   'debug:i' =>\$debug, 
-   'u=s'   =>\$user,
-   'p=s'   =>\$pass
-  ) or pod2usage(2);
+   'help|?'         => \$opt_h, 
+   'man|?'          => \$opt_man, 
+   'debug:i'        => \$debug, 
+   'u|username=s'   => \$user,
+   'p|password=s'   => \$pass,
+   'tmpdir:s'       => \$TMP_DIR,
+) or Pod::Usage::pod2usage(2);
 
+# Basic sanity check for /tmp dir
+if (! $TMP_DIR or ! -d $TMP_DIR or ! -w $TMP_DIR) {
+    die "Can't write into temp dir '$TMP_DIR': $!\n";
+}
 
 ## Setup the Terminal
 my $prompt = "dave> ";
@@ -212,9 +238,9 @@ sub command_cat {
 
 sub command_edit { 
    my $remote_file = shift;
-   $TMP_DIR||="/tmp";
-   my $EDITOR= $ENV{DAV_EDITOR} || $ENV{EDITOR} || "vi";
-   my $local_file = "$TMP_DIR/dave.perldav." . $$ . time;
+
+   my $EDITOR= $ENV{DAV_EDITOR} || $ENV{EDITOR} || 'vi';
+   my $local_file = HTTP::DAV::_tempfile('dave', $TMP_DIR);
 
    my $resource = $gdc->propfind($remote_file);
    if ( $resource && $resource->is_collection() ) {
@@ -641,24 +667,6 @@ BEGIN {
 # PERLDOC
 __END__
 
-=head1 NAME
-
-dave -- DAV Explorer
-
-=head1 SYNOPSIS
-
-dave [OPTIONS] URL
-
-E.g. 
-
-   $ dave -u pcollins -p mypass www.host.org/dav_dir/
-   ...
-   dave> get file.txt
-
-Use "dave -h" to get help on options
-
-Use "perldoc dave" for the whole manpage.
-
 =head1 DESCRIPTION
 
 dave is a powerful command-line program for interacting with WebDAV-enabled webservers. With dave you can:
@@ -693,33 +701,35 @@ If you would like to script webdav interactions in Perl checkout the HTTP::DAV A
 
 =over 4
 
-=item -debug N
+=item C<-debug N>
 
 Sets the debug level to N. 0=none. 3=noisy.
 
-=item -h
+=item C<-h>
 
 Prints basic help and options.
 
-=item -man
+=item C<-man>
 
 Prints the full manual (equivalent to perldoc dave).
 
-You will need to use a pager like "more" or "less".
+You will need to use a pager like C<more> or C<less>. e.g.
 
- e.g. dave -man |less
+    dave -man |less
 
-=item -p <password>
+=item C<< -p <password> >>
 
 Sets the password to be used for the URL.
+You must also supply a user. See C<-u>.
 
-You must also supply a user. See -u.
-
-=item -u <username>
+=item C<< -u <username> >>
 
 Sets the username to be used for the URL.
+You must also supply a pass. See C<-p>.
 
-You must also supply a pass. See -p.
+=item C<-tmpdir /some/path>
+
+Create temporary files in C</some/path> instead of the default C</tmp>.
 
 =back
 
@@ -1165,5 +1175,9 @@ This module is Copyright (C) 2001 by
 All rights reserved.
 
 You may distribute this module under the terms of either the GNU General Public License or the Artistic License, as specified in the Perl README file.
+
+=head1 MAINTAINER
+
+Cosimo Streppone, E<lt>cosimo@cpan.orgE<gt>
 
 =cut

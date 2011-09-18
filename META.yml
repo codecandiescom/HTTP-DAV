@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               HTTP-DAV
-version:            0.44
+version:            0.45
 abstract:           ~
 author:  []
 license:            unknown
@@ -10,9 +10,18 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    LWP:           5.48
-    Scalar::Util:  0
-    XML::DOM:      0
+    Cwd:               0
+    File::Temp:        0
+    Getopt::Long:      0
+    LWP:               5.48
+    Pod::Usage:        0
+    Scalar::Util:      0
+    Term::ReadLine:    0
+    Text::ParseWords:  0
+    Time::Local:       0
+    URI:               0
+    URI::Escape:       0
+    XML::DOM:          0
 no_index:
     directory:
         - t
